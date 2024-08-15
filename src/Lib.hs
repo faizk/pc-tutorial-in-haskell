@@ -68,7 +68,7 @@ foll pa pb s = do
   return ((a, b), rest')
 
 pmap :: (a -> b) -> Parser a -> Parser b
-pmap f pa s = map (\(a, rest) -> (f a, rest)) $ pa s
+pmap f pa = map (\(a, rest) -> (f a, rest)) . pa
 
 naturalP :: Parser Natural
 naturalP = pmap digitsToNat $ oneOrMore digitP
