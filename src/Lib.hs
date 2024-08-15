@@ -6,6 +6,7 @@ module Lib
     , zeroOrMore
     , orElse
     , happy
+    , quietlySad
     , Parser
     ) where
 
@@ -42,6 +43,9 @@ orElse pl pr s = case pl s of
 
 happy :: a -> Parser a
 happy a s = [(a, s)]
+
+quietlySad :: Parser a
+quietlySad = const []
 
 zeroOrMore :: Parser a -> Parser [a]
 zeroOrMore p = oneOrMore p `orElse` happy []
