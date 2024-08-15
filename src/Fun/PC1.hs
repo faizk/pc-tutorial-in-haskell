@@ -1,4 +1,4 @@
-module Lib
+module Fun.PC1
     ( someFunc
     , charP
     , digitP
