@@ -9,6 +9,7 @@ module Lib
     , quietlySad
     , foll
     , pmap
+    , naturalP
     , Parser
     ) where
 
@@ -65,3 +66,11 @@ foll pa pb s = do
 
 pmap :: (a -> b) -> Parser a -> Parser b
 pmap f pa s = map (\(a, rest) -> (f a, rest)) $ pa s
+
+naturalP :: Parser Natural
+naturalP = pmap digitsToNat $ oneOrMore digitP
+
+--- utils
+digitsToNat :: [Natural] -> Natural
+digitsToNat ds = sum [d * (10^p) | (d,p) <- reverse ds `zip` [0..]]
+
