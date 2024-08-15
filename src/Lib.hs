@@ -12,6 +12,7 @@ module Lib
     , psequence
     , naturalP
     , strP
+    , delimP
     , Parser
     ) where
 
@@ -81,6 +82,12 @@ psequence (p:ps) s = do
 
 strP :: String -> Parser String
 strP = psequence . map charP
+
+delimP :: Parser s -> Parser a -> Parser [a]
+delimP pSep pa = pmap (uncurry (:)) p `orElse` happy []
+    where
+      p = pa `foll` zeroOrMore dpa
+      dpa = pmap snd $ pSep `foll` pa
 
 --- utils
 digitsToNat :: [Natural] -> Natural
