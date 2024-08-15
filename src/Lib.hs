@@ -9,7 +9,9 @@ module Lib
     , quietlySad
     , foll
     , pmap
+    , psequence
     , naturalP
+    , strP
     , Parser
     ) where
 
@@ -69,6 +71,16 @@ pmap f pa s = map (\(a, rest) -> (f a, rest)) $ pa s
 
 naturalP :: Parser Natural
 naturalP = pmap digitsToNat $ oneOrMore digitP
+
+psequence :: [Parser a] -> Parser [a]
+psequence [] s = happy [] s
+psequence (p:ps) s = do
+  (a, rest)   <- p s
+  (as, rest') <- psequence ps rest
+  return (a:as, rest')
+
+strP :: String -> Parser String
+strP = psequence . map charP
 
 --- utils
 digitsToNat :: [Natural] -> Natural
