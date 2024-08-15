@@ -19,9 +19,8 @@ someFunc = putStrLn "someFunc"
 type Parser a = String -> [(a, String)]
 
 charP :: Char -> Parser Char
-charP c = f
-  where f (a:rest) | a == c = [(a, rest)]
-        f _  = []
+charP c (a:rest) | a == c = [(a, rest)]
+charP _ _ = []
 
 digitP :: Parser Natural
 digitP ('0':cs) = [(0, cs)]
