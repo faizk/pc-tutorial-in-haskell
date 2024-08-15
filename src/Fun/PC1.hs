@@ -1,5 +1,5 @@
 module Fun.PC1
-    ( someFunc
+    ( Parser
     , charP
     , digitP
     , oneOrMore
@@ -13,13 +13,9 @@ module Fun.PC1
     , naturalP
     , strP
     , delimP
-    , Parser
     ) where
 
 import Numeric.Natural (Natural)
-
-someFunc :: IO ()
-someFunc = putStrLn "someFunc"
 
 type Parser a = String -> [(a, String)]
 
