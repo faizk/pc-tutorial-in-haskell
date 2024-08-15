@@ -8,6 +8,7 @@ module Lib
     , happy
     , quietlySad
     , foll
+    , pmap
     , Parser
     ) where
 
@@ -61,3 +62,6 @@ foll pa pb s = do
   (a, rest)  <- pa s
   (b, rest') <- pb rest
   return ((a, b), rest')
+
+pmap :: (a -> b) -> Parser a -> Parser b
+pmap f pa s = map (\(a, rest) -> (f a, rest)) $ pa s
