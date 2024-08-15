@@ -7,6 +7,7 @@ module Lib
     , orElse
     , happy
     , quietlySad
+    , foll
     , Parser
     ) where
 
@@ -55,3 +56,9 @@ oneOrMore p s = do
         (a, rest) <- p s
         (l, rest') <- zeroOrMore p rest
         return (a:l, rest')
+
+foll :: Parser a -> Parser b -> Parser (a, b)
+foll pa pb s = do
+  (a, rest)  <- pa s
+  (b, rest') <- pb rest
+  return ((a, b), rest')
