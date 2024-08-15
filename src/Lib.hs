@@ -51,10 +51,7 @@ zeroOrMore :: Parser a -> Parser [a]
 zeroOrMore p = oneOrMore p `orElse` happy []
 
 oneOrMore :: Parser a -> Parser [a]
-oneOrMore p = f
-  where
-    f s =
-      do
+oneOrMore p s = do
         (a, rest) <- p s
         (l, rest') <- zeroOrMore p rest
         return (a:l, rest')
