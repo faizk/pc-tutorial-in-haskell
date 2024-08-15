@@ -2,6 +2,9 @@ module Lib
     ( someFunc
     , charP
     , digitP
+    , oneOrMore
+    , zeroOrMore
+    , orElse
     , Parser
     ) where
 
@@ -31,4 +34,19 @@ digitP ('9':cs) = [(9, cs)]
 digitP _ = []
 
 
+orElse :: Parser a -> Parser a -> Parser a
+orElse pl pr s = case pl s of
+  h:t -> h:t
+  [] -> pr s
 
+zeroOrMore :: Parser a -> Parser [a]
+zeroOrMore p = oneOrMore p `orElse` (\s -> [([], s)])
+
+oneOrMore :: Parser a -> Parser [a]
+oneOrMore p = f
+  where
+    f s =
+      do
+        (a, rest) <- p s
+        (l, rest') <- zeroOrMore p rest
+        return (a:l, rest')
