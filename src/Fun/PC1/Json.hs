@@ -7,6 +7,7 @@ import Fun.PC1
     , pmap
     , naturalP
     , charP
+    , strP
     , foll
     , orElse
     , zeroOrMore
@@ -24,5 +25,10 @@ stringP :: Parser J.Json
 stringP = pmap J.Str $ surr q $ zeroOrMore (charP (== '"'))
   where q = charP (=='"')
 
+boolP :: Parser J.Json
+boolP = p True "true" `orElse` p False "false"
+  where
+    p b s = pmap (const $ J.Bool b) $ strP s
+
 parse :: Parser J.Json
-parse = numP `orElse` stringP
+parse = numP `orElse` stringP `orElse` boolP
