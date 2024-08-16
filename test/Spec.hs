@@ -1,19 +1,13 @@
 import Test.QuickCheck
-
 import qualified Fun.Json as J
-import Stuff ()
+import Fun.PC1.Json
 
-import Fun.PC1
-
-p1 :: J.Json -> J.Json -> Bool
-p1 (J.Num a) (J.Num b) =
-  (a+b) == (b+a)
-p1 _ _ = True
+prop_roundTrip :: J.Json -> Bool
+prop_roundTrip j = parsed == [(j, "")]
+  where parsed = parse s
+        s      = show j
 
 main :: IO ()
 main = do
-  print "START"
-  quickCheck p1
-  print "END"
-
+  quickCheck prop_roundTrip
 
