@@ -37,23 +37,25 @@ boolP = p True "true" `orElse` p False "false"
 nullP :: Parser J.Json
 nullP = pmap (const J.Null) $ strP "null"
 
-arrP :: Parser J.Json
-arrP = pmap J.Arr $ surr2 (c '[') lp (c ']')
+collP :: Parser s -> Parser a -> Parser e -> Parser [a]
+collP ps pa = surr2 ps lp
   where
-    c x = charP (== x)
-    lp = delimP commaP parse
-    commaP = c ','
+    lp = delimP commaP pa
+    commaP = charP (== ',')
+
+arrP :: Parser J.Json
+arrP = pmap J.Arr $ collP (char '[') parse (char ']')
+  where
+    char c = charP (== c)
 
 objP :: Parser J.Json
-objP = pmap J.Obj $ surr2 (c '{') plp (c '}')
+objP = pmap J.Obj $ collP (char '{') kvPairP (char '}')
   where
-    c x = charP (== x)
-    plp = delimP commaP kvPairP
-    commaP = c ','
+    char c = charP (== c)
     kvPairP = pmap J.Key (qq sp) `foll` parse
     qq = surr q
     q = charP (/= '"')
-    sp = zeroOrMore (charP (== '"'))
+    sp = zeroOrMore (char '"')
 
 parse :: Parser J.Json
 parse = numP `orElse` stringP `orElse` boolP
