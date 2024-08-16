@@ -1,6 +1,7 @@
 module Fun.PC1
     ( Parser
     , anyChar
+    , char
     , charP
     , digitP
     , oneOrMore
@@ -14,6 +15,7 @@ module Fun.PC1
     , naturalP
     , strP
     , delimP
+    , ws , surr, surr2
     ) where
 
 import Numeric.Natural (Natural)
@@ -91,7 +93,24 @@ delimP pSep pa = pmap (uncurry (:)) p `orElse` happy []
       p = pa `foll` zeroOrMore dpa
       dpa = pmap snd $ pSep `foll` pa
 
+char :: Char -> Parser Char
+char c = charP (== c)
+
+wsP :: Parser Char
+wsP = foldr orElse quietlySad wsPs
+  where
+    wsPs = map char wsChars
+    wsChars = " \n\t"
+
 --- utils
+ws :: Parser a -> Parser a
+ws = surr (zeroOrMore wsP)
+
+surr :: Parser a -> Parser b -> Parser b
+surr pa pb = pmap (snd . fst) $ pa `foll` pb `foll` pa
+
+surr2 :: Parser a -> Parser b -> Parser c -> Parser b
+surr2 pa pb pc = pmap (snd . fst) $ pa `foll` pb `foll` pc
+
 digitsToNat :: [Natural] -> Natural
 digitsToNat ds = sum [d * (10^p) | (d,p) <- reverse ds `zip` [0..]]
-
