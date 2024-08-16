@@ -13,6 +13,7 @@ module Fun.PC1
     , pmap
     , psequence
     , naturalP
+    , integerP
     , strP
     , delimP
     , ws , surr, surr2
@@ -114,3 +115,10 @@ surr2 pa pb pc = pmap (snd . fst) $ pa `foll` pb `foll` pc
 
 digitsToNat :: [Natural] -> Natural
 digitsToNat ds = sum [d * (10^p) | (d,p) <- reverse ds `zip` [0..]]
+
+integerP :: Parser Integer
+integerP = pos `orElse` neg
+  where
+    pos = pmap toInteger naturalP
+    neg = pmap (negate . toInteger . snd) neg'
+    neg' = char '-' `foll` naturalP

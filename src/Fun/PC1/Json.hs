@@ -6,7 +6,7 @@ import Fun.PC1
     ( Parser
     , char
     , pmap
-    , naturalP
+    , integerP
     , charP
     , strP
     , foll
@@ -17,13 +17,6 @@ import Fun.PC1
     )
 
 import qualified Fun.Json as J
-
-numP :: Parser J.Json
-numP = pmap J.Num $ pos `orElse` neg
-  where
-    pos = pmap toInteger naturalP
-    neg = pmap (negate . toInteger . snd) neg'
-    neg' = char '-' `foll` naturalP
 
 qStringP :: Parser String
 qStringP = surr (char '"') $ zeroOrMore (charP (/= '"'))
@@ -45,7 +38,7 @@ arrP :: Parser J.Json
 arrP = pmap J.Arr $ collP (char '[') parse (char ']')
 
 objP :: Parser J.Json
-objP = pmap J.Obj $ collP (char '{') (ws kvPairP) (char '}')
+objP = pmap J.Obj $ collP (char '{') kvPairP (char '}')
   where
     kvPairP = ws keyP `foll` parse
     keyP = pmap fst keyP'
@@ -58,3 +51,4 @@ parse = ws $ numP
   `orElse` arrP `orElse` objP
     where
       stringP = pmap J.Str qStringP
+      numP = pmap J.Num integerP
