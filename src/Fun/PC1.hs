@@ -24,9 +24,10 @@ anyChar :: Parser Char
 anyChar "" = []
 anyChar (c:cs) = [(c, cs)]
 
-charP :: Char -> Parser Char
-charP c (a:rest) | a == c = [(a, rest)]
+charP :: (Char -> Bool) -> Parser Char
+charP f (c:cs) | f c = [(c, cs)]
 charP _ _ = []
+  
 
 digitP :: Parser Natural
 digitP ('0':cs) = [(0, cs)]
@@ -82,7 +83,7 @@ psequence (p:ps) s = do
   return (a:as, rest')
 
 strP :: String -> Parser String
-strP = psequence . map charP
+strP = psequence . map (\c -> charP (c ==))
 
 delimP :: Parser s -> Parser a -> Parser [a]
 delimP pSep pa = pmap (uncurry (:)) p `orElse` happy []

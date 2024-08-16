@@ -11,6 +11,9 @@ p1 (J.Num a) (J.Num b) =
 p1 _ _ = True
 
 main :: IO ()
-main =
+main = do
+  print "START"
   quickCheck p1
+  print "END"
+
 
