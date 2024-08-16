@@ -17,10 +17,13 @@ import Fun.PC1
 
 import qualified Fun.Json as J
 
+char :: Char -> Parser Char
+char c = charP (== c)
+
 wsP :: Parser Char
 wsP = foldr orElse quietlySad wsPs
   where
-    wsPs = map (\c -> charP (== c)) wsChars
+    wsPs = map char wsChars
     wsChars = " \n\t"
 
 ws :: Parser a -> Parser a
@@ -31,7 +34,7 @@ numP = pmap J.Num $ pos `orElse` neg
   where
     pos = pmap toInteger naturalP
     neg = pmap (negate . toInteger . snd) neg'
-    neg' = charP (=='-') `foll` naturalP
+    neg' = char '-' `foll` naturalP
 
 surr :: Parser a -> Parser b -> Parser b
 surr pa pb = pmap (snd . fst) $ pa `foll` pb `foll` pa
@@ -40,8 +43,7 @@ surr2 :: Parser a -> Parser b -> Parser c -> Parser b
 surr2 pa pb pc = pmap (snd . fst) $ pa `foll` pb `foll` pc
 
 qStringP :: Parser String
-qStringP = surr q $ zeroOrMore (charP (/= '"'))
-  where q = charP (=='"')
+qStringP = surr (char '"') $ zeroOrMore (charP (/= '"'))
 
 boolP :: Parser J.Json
 boolP = p True "true" `orElse` p False "false"
@@ -54,18 +56,14 @@ nullP = pmap (const J.Null) $ strP "null"
 collP :: Parser s -> Parser a -> Parser e -> Parser [a]
 collP ps pa pe = surr2 (ws ps) lp (ws pe)
   where
-    lp = delimP commaP pa
-    commaP = charP (== ',')
+    lp = delimP (char ',') pa
 
 arrP :: Parser J.Json
 arrP = pmap J.Arr $ collP (char '[') parse (char ']')
-  where
-    char c = charP (== c)
 
 objP :: Parser J.Json
 objP = pmap J.Obj $ collP (char '{') (ws kvPairP) (char '}')
   where
-    char c = charP (== c)
     kvPairP = ws keyP `foll` parse
     keyP = pmap fst keyP'
     keyP' = ws (pmap J.Key qStringP) `foll` ws (char ':')
