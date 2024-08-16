@@ -1,5 +1,6 @@
 module Fun.PC1
     ( Parser
+    , anyChar
     , charP
     , digitP
     , oneOrMore
@@ -18,6 +19,10 @@ module Fun.PC1
 import Numeric.Natural (Natural)
 
 type Parser a = String -> [(a, String)]
+
+anyChar :: Parser Char
+anyChar "" = []
+anyChar (c:cs) = [(c, cs)]
 
 charP :: Char -> Parser Char
 charP c (a:rest) | a == c = [(a, rest)]
