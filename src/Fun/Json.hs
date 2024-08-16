@@ -1,6 +1,7 @@
 {-# LANGUAGE GADTs #-}
 module Fun.Json
-    (Json(..)
+    ( Json(..)
+    , Key(..)
     ) where
 
 import Test.QuickCheck

@@ -26,7 +26,7 @@ surr2 :: Parser a -> Parser b -> Parser c -> Parser b
 surr2 pa pb pc = pmap (snd . fst) $ pa `foll` pb `foll` pc
 
 stringP :: Parser J.Json
-stringP = pmap J.Str $ surr q $ zeroOrMore (charP (== '"'))
+stringP = pmap J.Str $ surr q $ zeroOrMore (charP (/= '"'))
   where q = charP (=='"')
 
 boolP :: Parser J.Json
@@ -44,6 +44,17 @@ arrP = pmap J.Arr $ surr2 (c '[') lp (c ']')
     lp = delimP commaP parse
     commaP = c ','
 
+objP :: Parser J.Json
+objP = pmap J.Obj $ surr2 (c '{') plp (c '}')
+  where
+    c x = charP (== x)
+    plp = delimP commaP kvPairP
+    commaP = c ','
+    kvPairP = pmap J.Key (qq sp) `foll` parse
+    qq = surr q
+    q = charP (/= '"')
+    sp = zeroOrMore (charP (== '"'))
+
 parse :: Parser J.Json
 parse = numP `orElse` stringP `orElse` boolP
-  `orElse` arrP `orElse` nullP
+  `orElse` arrP `orElse` nullP `orElse` objP
