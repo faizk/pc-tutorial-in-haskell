@@ -27,6 +27,7 @@ library
   exposed-modules:
       Fun.Json
       Fun.PC1
+      Fun.Utils
   other-modules:
       Paths_pc_tut
   autogen-modules:
