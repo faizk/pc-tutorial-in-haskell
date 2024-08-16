@@ -26,9 +26,6 @@ boolP = p True "true" `orElse` p False "false"
   where
     p b s = pmap (const $ J.Bool b) $ strP s
 
-nullP :: Parser J.Json
-nullP = pmap (const J.Null) $ strP "null"
-
 collP :: Parser s -> Parser a -> Parser e -> Parser [a]
 collP ps pa pe = surr2 (ws ps) lp (ws pe)
   where
@@ -52,3 +49,4 @@ parse = ws $ numP
     where
       stringP = pmap J.Str qStringP
       numP = pmap J.Num integerP
+      nullP = pmap (const J.Null) $ strP "null"
