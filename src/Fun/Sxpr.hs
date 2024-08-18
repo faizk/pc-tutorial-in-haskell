@@ -3,6 +3,7 @@ module Fun.Sxpr
     , Val(..)
     ) where
 
+import Data.Maybe (fromMaybe)
 import Fun.Utils
 import Test.QuickCheck
 
@@ -45,11 +46,10 @@ instance Render Sxpr where
     Qt s -> '\'' : render s
     Qqt s -> '`' : render s
     Uqt s -> ',' : render s
-    Pair l r -> "(" ++ inside ++ ")"
+    Pair l r -> "(" ++ fromMaybe pair maybeLst ++ ")"
       where
-        inside = case maybeList e of
-          Just list -> unwords $ map render list
-          Nothing -> render l ++ " . " ++ render r
+        maybeLst = unwords . map render <$> maybeList e
+        pair = render l ++ " . " ++ render r
 
 instance Arbitrary Val where
   arbitrary = oneof [ Num <$> arbitrary
