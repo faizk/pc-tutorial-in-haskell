@@ -16,7 +16,7 @@ module Fun.PC1
     , integerP
     , strP
     , delimP
-    , ws , surr, surr2
+    , ws, wsP, surr, surr2
     ) where
 
 import Numeric.Natural (Natural)
