@@ -9,7 +9,7 @@ data Val
   = Num Int
   | Str String
   | T | F
-  deriving (Eq, Show)
+  deriving (Eq)
 
 data Sxpr
   = Nil
@@ -19,7 +19,34 @@ data Sxpr
   | Qt Sxpr
   | Qqt Sxpr
   | Uqt Sxpr
-  deriving (Eq, Show)
+  deriving (Eq)
+
+instance Show Val where
+  show (Num n) = show n
+  show (Str s) = show s
+  show T = "#t"
+  show F = "#f"
+
+renderList :: Sxpr -> (Bool, String)
+renderList e = case e of
+  Pair h t -> case renderList t of
+    (True, "") -> (True,  show h)
+    (True, s)  -> (True,  show h ++ " " ++ s)
+    (False, s) -> (False, show h ++ " . " ++ s)
+  Nil -> (True, "")
+  _ -> (False, show e)
+
+instance Show Sxpr where
+  show e = case e of
+    Nil -> "()"
+    Lit v -> show v
+    Sym s -> s
+    Qt s -> '\'' : show s
+    Qqt s -> '`' : show s
+    Uqt s -> ',' : show s
+    Pair _ _ -> "(" ++ s ++ ")"
+      where
+        (_, s) = renderList e
 
 instance Arbitrary Val where
   arbitrary = oneof [ Num <$> arbitrary
