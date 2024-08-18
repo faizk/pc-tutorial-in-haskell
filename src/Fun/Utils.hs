@@ -1,5 +1,8 @@
 module Fun.Utils
-    (
+    ( Render(..)
     ) where
 
-x = 42
+class Render a where
+  render :: a -> String
+
+

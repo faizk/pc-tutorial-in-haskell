@@ -55,7 +55,7 @@ atomP = boolP `orElse` intP `orElse` symP `orElse` zilchP
     intP = (S.Lit . (S.Num . fromIntegral)) `pmap` integerP
 
 sxprP :: Parser S.Sxpr
-sxprP = lsp $ qSxprP `orElse` atomP `orElse` listP `orElse` cellP
+sxprP = lsp $ qSxprP `orElse` atomP `orElse` cellP `orElse` listP
   where
     lsp p = pmap snd $ zeroOrMore wsP `foll` p
     qSxprP = qteP `orElse` qqteP `orElse` uqteP
