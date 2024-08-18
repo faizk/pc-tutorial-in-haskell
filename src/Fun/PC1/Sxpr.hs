@@ -8,7 +8,7 @@ import Fun.PC1
 import Data.Char (isSpace)
 
 zilchP :: Parser S.Sxpr
-zilchP = pmap (const S.Nil) $ ws (char '(') `foll` ws (char ')')
+zilchP = pmap (const S.Nil) $ char '(' `foll` zeroOrMore wsP `foll` char ')'
 
 symCP :: Parser Char
 symCP = charP f
@@ -30,13 +30,13 @@ symP :: Parser S.Sxpr
 symP = S.Sym `pmap` oneOrMore symCP
 
 cellP' :: Parser S.Sxpr
-cellP' = pmap f $ ws sxprP `foll` dot `foll` ws sxprP
+cellP' = pmap f $ ws sxprP `foll` dot `foll` sxprP
   where
     f ((l, _), r) = S.Pair l r
     dot = ws $ char '.'
 
 listP' :: Parser S.Sxpr
-listP' = asPair `pmap` delimP wsP sxprP
+listP' = asPair `pmap` delimP (oneOrMore wsP) sxprP
   where
     asPair (s:ss) = S.Pair s (asPair ss)
     asPair [] = S.Nil
@@ -55,8 +55,9 @@ atomP = boolP `orElse` intP `orElse` symP `orElse` zilchP
     intP = (S.Lit . (S.Num . fromIntegral)) `pmap` integerP
 
 sxprP :: Parser S.Sxpr
-sxprP = ws $ qSxprP `orElse` atomP `orElse` listP `orElse` cellP
+sxprP = lsp $ qSxprP `orElse` atomP `orElse` listP `orElse` cellP
   where
+    lsp p = pmap snd $ zeroOrMore wsP `foll` p
     qSxprP = qteP `orElse` qqteP `orElse` uqteP
     qteP = q '\'' S.Qt
     qqteP = q '`' S.Qqt

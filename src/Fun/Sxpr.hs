@@ -27,14 +27,12 @@ instance Show Val where
   show T = "#t"
   show F = "#f"
 
-renderList :: Sxpr -> (Bool, String)
-renderList e = case e of
-  Pair h t -> case renderList t of
-    (True, "") -> (True,  show h)
-    (True, s)  -> (True,  show h ++ " " ++ s)
-    (False, s) -> (False, show h ++ " . " ++ s)
-  Nil -> (True, "")
-  _ -> (False, show e)
+
+maybeList :: Sxpr -> Maybe [Sxpr]
+maybeList e = case e of
+  Pair h t -> (h :) <$> maybeList t
+  Nil -> pure []
+  _ -> Nothing
 
 instance Show Sxpr where
   show e = case e of
@@ -44,9 +42,11 @@ instance Show Sxpr where
     Qt s -> '\'' : show s
     Qqt s -> '`' : show s
     Uqt s -> ',' : show s
-    Pair _ _ -> "(" ++ s ++ ")"
+    Pair l r -> "(" ++ inside ++ ")"
       where
-        (_, s) = renderList e
+        inside = case maybeList e of
+          Just list -> unwords $ map show list
+          Nothing -> show l ++ " . " ++ show r
 
 instance Arbitrary Val where
   arbitrary = oneof [ Num <$> arbitrary
