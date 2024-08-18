@@ -27,6 +27,7 @@ library
   exposed-modules:
       Fun.Json
       Fun.PC1
+      Fun.PC1.Calc
       Fun.PC1.Json
       Fun.Utils
   other-modules:
