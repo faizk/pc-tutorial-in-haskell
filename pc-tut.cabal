@@ -29,6 +29,8 @@ library
       Fun.PC1
       Fun.PC1.Calc
       Fun.PC1.Json
+      Fun.PC1.Sxpr
+      Fun.Sxpr
       Fun.Utils
   other-modules:
       Paths_pc_tut
