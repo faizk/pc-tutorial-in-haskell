@@ -30,31 +30,21 @@ instance Show Json where
   show (Bool False) = "false"
   show Null = "null"
 
+instance GenShow Key where genShow (Key k) = genShow (Str k)
+
 instance GenShow Json where
   genShow j =
     case j of
-      Num _ -> sur j
-      Str _ -> sur j
-      Null -> sur j
-      Bool _ -> sur j
       Arr a -> braces "[" (intercalate "," <$> mapM genShow a) "]"
-      Obj o -> braces "{" (intercalate "," <$> mapM f o) "}"
-        where
-          f (Key k, v) =
-            do
-              vs <- genShow v
-              ks <- genShow (Str k)
-              return $ ks ++ ":" ++ vs
+      Obj o -> braces "{" (intercalate "," <$> mapM genKv o) "}"
+      _ -> sur j
     where
+      genKv :: (Key, Json) -> Gen String
+      genKv (k, v) = (++) . (++ ":") <$> genShow k <*> genShow v
       braces a x z = concat <$> sequence [return a, x, return z]
-      pn = choose (0, 4)
-      space n = vectorOf n $ oneof $ map return " \t"
+      space = choose (0,4) >>= (`vectorOf` oneof (map return " \t"))
       sur :: Json -> Gen String
-      sur j' =
-        do
-          l <- pn; r <- pn
-          ls <- space l; rs <- space r
-          return $ ls ++ show j' ++ rs
+      sur j' = (++) . (++ show j') <$> space <*> space
 
 genAlhaNumChar :: Gen Char
 genAlhaNumChar = oneof $ map return $ a ++ a' ++ n ++ s
@@ -63,9 +53,7 @@ genAlhaNumChar = oneof $ map return $ a ++ a' ++ n ++ s
     n  = ['0'..'9']; s  = "-+/', @#"
 
 genSmallStr :: Gen [Char]
-genSmallStr = do
-  k <- chooseInt (0, 8)
-  vectorOf k genAlhaNumChar
+genSmallStr = choose (0, 8) >>= (`vectorOf` genAlhaNumChar)
 
 instance Arbitrary Key where
   arbitrary = Key <$> genSmallStr
