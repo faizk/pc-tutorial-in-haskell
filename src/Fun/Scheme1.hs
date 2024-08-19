@@ -38,7 +38,7 @@ eval env sxpr =
     Sym sym -> case lookup sym env of
       Just v -> Right v
       Nothing -> Left $ "undefined symbol: " ++ sym
-    (Sym "let") :~ bindings :~ body :~ Nil ->
+    Sym "let" :~ bindings :~ body :~ Nil ->
       do
         bindings' <- rawBindings bindings
         updEnv <- evalBindings env bindings'

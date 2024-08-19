@@ -4,6 +4,9 @@ import qualified Fun.Sxpr as S
 import qualified Fun.PC1.Json
 import qualified Fun.PC1.Sxpr
 import Fun.Utils (Render(..), Rendering(..))
+import qualified Fun.Scheme1
+
+newtype ST = ST (String, String) deriving Show
 
 prop_roundTripJson :: J.Json -> Bool
 prop_roundTripJson j = parsed == [(j, "")]
@@ -23,6 +26,13 @@ prop_roundTripSxpr' :: Rendering S.Sxpr -> Bool
 prop_roundTripSxpr' (Rendering x s) =
   (fst <$> Fun.PC1.Sxpr.sxprP s) == [x]
 
+prop_SchemeEval :: ST -> Bool
+prop_SchemeEval (ST (inp, out)) =
+  (eval <$> parse inp) == (Right <$> parse out)
+  where
+    eval = Fun.Scheme1.eval []
+    parse s = fst <$> Fun.PC1.Sxpr.sxprP s
+
 main :: IO ()
 main = do
   verboseCheckWith args  prop_roundTrips
@@ -39,4 +49,17 @@ main = do
         .&&. prop_roundTripJson'
         .&&. prop_roundTripSxpr
         .&&. prop_roundTripSxpr'
+        .&&. prop_SchemeEval
+
+instance Arbitrary ST where
+  arbitrary = oneof
+    [ (\s -> ST (show s, show s)) <$> (arbitrary :: Gen Int)
+    , return $ ST ("#f", "#f"), return $ ST ("#t", "#t")
+    , return $ ST ("'()", "'()")
+    , return $ ST ("(let ((x 23)) x)", "23")
+    , (\s -> ST (s, s)) . ('\'':) <$> smallStr
+    ]
+    where
+      smallStr = choose (1, 10) >>= (`vectorOf` (oneof $ map return ['a'..'z']))
+
 
