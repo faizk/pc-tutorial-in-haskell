@@ -19,6 +19,10 @@ prop_roundTripJson' :: Rendering J.Json -> Bool
 prop_roundTripJson' (Rendering j s) =
   (fst <$> Fun.PC1.Json.parse s) == [j]
 
+prop_roundTripSxpr' :: Rendering S.Sxpr -> Bool
+prop_roundTripSxpr' (Rendering x s) =
+  (fst <$> Fun.PC1.Sxpr.sxprP s) == [x]
+
 main :: IO ()
 main = do
   verboseCheckWith args  prop_roundTrips
@@ -34,4 +38,5 @@ main = do
       prop_roundTrips = prop_roundTripJson
         .&&. prop_roundTripJson'
         .&&. prop_roundTripSxpr
+        .&&. prop_roundTripSxpr'
 

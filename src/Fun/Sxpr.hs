@@ -5,6 +5,7 @@ module Fun.Sxpr
 
 import Fun.Utils
 import Test.QuickCheck
+import Data.List (intersperse)
 
 data Val
   = Num Int
@@ -50,6 +51,17 @@ instance Render Sxpr where
         inside = case maybeList e of
           Just list -> unwords $ map render list
           Nothing -> render l ++ " . " ++ render r
+
+instance GenShow Sxpr where
+  genShow e = concat <$> sequence gens
+    where
+      space u v = choose (u, v) >>= (`vectorOf` oneof (map return " \t"))
+      gens = case e of
+        Pair l r -> space 0 2 : return "(" : inside ++ [return ")", space 0 2]
+          where inside = case maybeList e of
+                  Just list -> intersperse (space 1 8) $ map genShow list
+                  Nothing -> [genShow l, return " . ", genShow r]
+        _ -> [space 0 4, return $ render e, space 0 4]
 
 instance Arbitrary Val where
   arbitrary = oneof [ Num <$> arbitrary
