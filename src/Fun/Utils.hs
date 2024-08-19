@@ -1,7 +1,8 @@
 module Fun.Utils
     ( Render(..)
     , Rendering(..)
-    , GenShow(..),
+    , GenShow(..)
+    , toEither
     ) where
 
 import Test.QuickCheck
@@ -21,4 +22,7 @@ instance GenShow a => Arbitrary (Rendering a) where
       a <- arbitrary
       s <- genShow a
       return $ Rendering a s
-  
+
+toEither :: e -> Maybe a -> Either e a
+toEither e Nothing = Left e
+toEither _ (Just a) = Right a

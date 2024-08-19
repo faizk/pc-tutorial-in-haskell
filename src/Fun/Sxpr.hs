@@ -1,6 +1,7 @@
 module Fun.Sxpr
     ( Sxpr(..)
     , Val(..)
+    , maybeList
     ) where
 
 import Fun.Utils
@@ -23,7 +24,7 @@ data Sxpr
   | Uqt Sxpr
   deriving (Eq)
 
-
+infixr 5 :~
 
 instance Show Val where show = render
 instance Show Sxpr where show = render
