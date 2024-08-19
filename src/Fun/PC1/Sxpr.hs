@@ -29,17 +29,23 @@ parensP p = pmap f $ char '(' `foll` ws p `foll` char ')'
 symP :: Parser S.Sxpr
 symP = S.Sym `pmap` oneOrMore symCP
 
-cellP :: Parser S.Sxpr
-cellP = parensP $ pmap f $ ws sxprP `foll` dot `foll` sxprP
+cellP' :: Parser S.Sxpr
+cellP' = pmap f $ ws sxprP `foll` dot `foll` sxprP
   where
     f ((l, _), r) = S.Pair l r
-    dot = pmap (const ()) $ wsP `foll` char '.' `foll` wsP
+    dot = ws $ char '.'
 
-listP :: Parser S.Sxpr
-listP = parensP $ asPair `pmap` delimP (oneOrMore wsP) sxprP
+listP' :: Parser S.Sxpr
+listP' = asPair `pmap` delimP (oneOrMore wsP) sxprP
   where
     asPair (s:ss) = S.Pair s (asPair ss)
     asPair [] = S.Nil
+
+listP :: Parser S.Sxpr
+listP = parensP listP'
+
+cellP :: Parser S.Sxpr
+cellP = parensP cellP'
 
 atomP :: Parser S.Sxpr
 atomP = boolP `orElse` intP `orElse` symP `orElse` zilchP
