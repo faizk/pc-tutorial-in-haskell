@@ -17,11 +17,13 @@ data Sxpr
   = Nil
   | Lit Val
   | Sym String
-  | Pair Sxpr Sxpr
+  | Sxpr :~ Sxpr
   | Qt Sxpr
   | Qqt Sxpr
   | Uqt Sxpr
   deriving (Eq)
+
+
 
 instance Show Val where show = render
 instance Show Sxpr where show = render
@@ -34,7 +36,7 @@ instance Render Val where
 
 maybeList :: Sxpr -> Maybe [Sxpr]
 maybeList e = case e of
-  Pair h t -> (h :) <$> maybeList t
+  h :~ t -> (h :) <$> maybeList t
   Nil -> pure []
   _ -> Nothing
 
@@ -46,7 +48,7 @@ instance Render Sxpr where
     Qt s -> '\'' : render s
     Qqt s -> '`' : render s
     Uqt s -> ',' : render s
-    Pair l r -> "(" ++ inside ++ ")"
+    l :~ r -> "(" ++ inside ++ ")"
       where
         inside = case maybeList e of
           Just list -> unwords $ map render list
@@ -57,7 +59,7 @@ instance GenShow Sxpr where
     where
       space u v = choose (u, v) >>= (`vectorOf` oneof (map return " \t"))
       gens = case e of
-        Pair l r -> space 0 2 : return "(" : inside ++ [return ")", space 0 2]
+        l :~ r -> space 0 2 : return "(" : inside ++ [return ")", space 0 2]
           where inside = case maybeList e of
                   Just list -> intersperse (space 1 8) $ map genShow list
                   Nothing -> [genShow l, return " . ", genShow r]
@@ -84,10 +86,10 @@ instance Arbitrary Sxpr where
       genPair n = do
         l <- resize 1 arbitrary
         r <- resize ((n - 1) `max` 0) arbitrary
-        return $ Pair l r
+        return $ l :~ r
       genList n = do
         v <- vectorOf (n `div` 2) (arbitrary :: Gen Sxpr)
-        return $ foldl Pair Nil v
+        return $ foldl (:~) Nil v
       genSmallStr u v = do
         l <- choose (u, v)
         vectorOf l genAlphaNumChar
