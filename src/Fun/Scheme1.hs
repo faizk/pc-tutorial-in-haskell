@@ -30,12 +30,12 @@ data Value
 
 rawBindings :: Sxpr -> Res [(String, Sxpr)]
 rawBindings sxpr = do
-  bindings <- maybeList sxpr `orL` "syntax error"
+  bindings <- maybeList sxpr `orL` syntaxErr "bad bindings" sxpr
   mapM kvPair bindings
 
 kvPair :: Sxpr -> Res (String, Sxpr)
 kvPair ((Sym k) :~ v :~ Nil) = Right (k, v)
-kvPair sxpr = Left $ "syntax error: expected name-value pair, got" ++ show sxpr
+kvPair sxpr = Left $ syntaxErr "expected name-value pair" sxpr
 
 evalBindings :: Env -> [(String, Sxpr)] -> Res Env
 evalBindings env = mapM f
@@ -46,11 +46,11 @@ updateEnv new old = new ++ old -- TODO: slow
 
 toArgList :: Sxpr -> Res [String]
 toArgList e = do
-  l <- maybeList e `orL` ("syntax error: not an argument list: " ++ show e)
+  l <- maybeList e `orL` syntaxErr "not an argument list" e
   mapM check l
     where
       check (Sym a) = Right a
-      check x = Left $ "Not a valid symbol: " ++ show x
+      check x = Left $ syntaxErr "Not a valid symbol: " x
 
 eval :: Env -> Sxpr -> Either Err Value
 eval env sxpr =
@@ -73,3 +73,5 @@ eval env sxpr =
     w ->
       Left $ "TODO: " ++ show w
 
+syntaxErr :: String -> Sxpr -> String
+syntaxErr msg context = "syntax error: " ++ msg ++ " in: " ++ show context
