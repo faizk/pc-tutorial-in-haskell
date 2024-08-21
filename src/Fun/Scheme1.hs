@@ -13,6 +13,20 @@ type Env = [Binding]
 type Err = String
 type Res a = Either Err a
 
+data BuiltIn
+  = Cons| Car | Cdr 
+  deriving (Eq, Show)
+
+data Callable
+  = Lambda [String] Sxpr Env
+  | BuiltIn BuiltIn
+  deriving (Eq, Show)
+
+data Value
+  = Sxpr Sxpr
+  | Callable Callable
+  deriving (Eq, Show)
+
 rawBindings :: Sxpr -> Res [Binding]
 rawBindings sxpr = do
   bindings <- maybeList sxpr `orL` "syntax error"
