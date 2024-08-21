@@ -15,7 +15,7 @@ type Err = String
 type Res a = Either Err a
 
 data BuiltIn
-  = Cons| Car | Cdr 
+  = Cons| Car | Cdr
   deriving (Eq, Show)
 
 data Callable
@@ -44,6 +44,14 @@ evalBindings env = mapM f
 updateEnv :: Env -> Env -> Env
 updateEnv new old = new ++ old -- TODO: slow
 
+toArgList :: Sxpr -> Res [String]
+toArgList e = do
+  l <- maybeList e `orL` ("syntax error: not an argument list: " ++ show e)
+  mapM check l
+    where
+      check (Sym a) = Right a
+      check x = Left $ "Not a valid symbol: " ++ show x
+
 eval :: Env -> Sxpr -> Either Err Value
 eval env sxpr =
   case sxpr of
@@ -53,6 +61,10 @@ eval env sxpr =
     Sym sym -> case lookup sym env of
       Just v -> Right v
       Nothing -> Left $ "undefined symbol: " ++ sym
+    Sym "lambda" :~ args :~ body :~ Nil ->
+      do
+        argList <- toArgList args
+        return $ Callable $ Lambda argList body env
     Sym "let" :~ bindings :~ body :~ Nil ->
       do
         bindings' <- rawBindings bindings
