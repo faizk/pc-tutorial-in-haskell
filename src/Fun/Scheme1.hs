@@ -15,7 +15,7 @@ type Res a = Either Err a
 
 rawBindings :: Sxpr -> Res [Binding]
 rawBindings sxpr = do
-  bindings <- toEither "syntax error" $ maybeList sxpr
+  bindings <- maybeList sxpr `orL` "syntax error"
   mapM kvPair bindings
 
 kvPair :: Sxpr -> Res (String, Sxpr)
