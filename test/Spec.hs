@@ -34,7 +34,7 @@ prop_SchemeEval st = case st of
   ST (inp, Nothing) ->
     not (any (isRight . eval) (parse inp))
   where
-    eval = Fun.Scheme1.eval []
+    eval = Fun.Scheme1.eval Fun.Scheme1.initEnv
     parse s = fst <$> Fun.PC1.Sxpr.sxprP s
 
 
@@ -60,13 +60,14 @@ instance Arbitrary ST where
   arbitrary = oneof
     [ (\s -> ST (show s, pure $ show s)) <$> (arbitrary :: Gen Int)
     , return $ ST ("#f", pure "#f"), return $ ST ("#t", pure "#t")
-    , return $ ST ("'()", pure "'()")
+    , return $ ST ("'()", pure "()")
     , return $ ST ("(let ((x 23)) x)", pure "23")
     , return $ ST ("(let ((x 23)) y)", Nothing)
-    , (\s -> ST (s, pure s)) . ('\'':) <$> smallStr
+    , (\s -> ST ('\'':s, pure s))  <$> smallStr
     , test "((lambda (x) x) 7)" "7"
-    -- , test "(cons 2 (cons 1 '()))" "(2 1)"
-    -- , test "((lambda (x) (cons x '())) '(2 1))" "((2 1))"
+    , test "(cons 2 1)" "(2 . 1)"
+    , test "(cons 2 (cons 1 '()))" "(2 1)"
+    , test "((lambda (x) (cons x '())) '(2 1))" "((2 1))"
     ]
     where
       smallStr = choose (1, 10) >>= (`vectorOf` (oneof $ map return ['a'..'z']))

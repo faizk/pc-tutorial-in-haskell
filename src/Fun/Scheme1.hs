@@ -1,5 +1,6 @@
 module Fun.Scheme1
     ( eval
+    , initEnv
     , Value(..)
     , fromSxpr
     ) where
@@ -109,7 +110,7 @@ apply (BuiltIn op) args =
 eval :: Env -> Sxpr -> Either Err Value
 eval env sxpr =
   case sxpr of
-    S.Qt x -> Right $ Qt $ fromSxpr x
+    S.Qt x -> Right $ fromSxpr x
     S.Nil -> Right Nil
     S.Lit v -> Right $ Lit v
     S.Sym sym -> case lookup sym env of
@@ -132,6 +133,17 @@ eval env sxpr =
         apply fVal argVals
     w ->
       Left $ "TODO: " ++ show w
+
+initEnv :: Env
+initEnv =
+  builtIns
+  where
+    builtIns = [ (s, Callable $ BuiltIn b) | (s, b) <- builtIns' ]
+    builtIns' =
+      [ ("cons", Cons)
+      , ("car", Car)
+      , ("cdr", Car)
+      ]
 
 syntaxErr :: String -> Sxpr -> String
 syntaxErr msg context = "syntax error: " ++ msg ++ " in: " ++ show context
