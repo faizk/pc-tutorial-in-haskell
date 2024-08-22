@@ -52,6 +52,20 @@ toArgList e = do
       check (Sym a) = Right a
       check x = Left $ syntaxErr "Not a valid symbol: " x
 
+ensureCallable :: Value -> Res Callable
+ensureCallable (Callable c) = Right c
+ensureCallable v = Left $ "uncallable value: " ++ show v
+
+apply :: Callable -> [Value] -> Res Value
+apply (Lambda fArgs body env) args =
+  do
+    argsEnv <- check fArgs args
+    eval (updateEnv argsEnv env) body
+  where
+    check = undefined
+apply _ _ = undefined
+
+
 eval :: Env -> Sxpr -> Either Err Value
 eval env sxpr =
   case sxpr of
@@ -70,6 +84,12 @@ eval env sxpr =
         bindings' <- rawBindings bindings
         updEnv <- evalBindings env bindings'
         eval (updateEnv updEnv env) body
+    fxpr :~ argsXpr ->
+      do
+        argXprList <- maybeList argsXpr `orL` syntaxErr "invalid argument" argsXpr
+        argVals <- mapM (eval env) argXprList
+        fVal <- eval env fxpr >>= ensureCallable
+        apply fVal argVals
     w ->
       Left $ "TODO: " ++ show w
 
