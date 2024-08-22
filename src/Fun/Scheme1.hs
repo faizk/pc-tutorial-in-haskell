@@ -77,10 +77,15 @@ ensureCallable v = Left $ "uncallable value: " ++ show v
 apply :: Callable -> [Value] -> Res Value
 apply (Lambda fArgs body env) args =
   do
-    argsEnv <- check fArgs args
+    argsEnv <- check
     eval (updateEnv argsEnv env) body
   where
-    check = undefined
+    nFArgs = length fArgs
+    nArgs = length args
+    check = case nFArgs `compare` nArgs of
+      LT -> Left $ "too many arguments, got " ++ show nArgs ++ ", expected " ++ show nFArgs
+      GT -> Left $ "too few arguments, got " ++ show nArgs ++ ", expected " ++ show nFArgs
+      EQ -> Right $ fArgs `zip` args
 apply (BuiltIn op) args =
   case (op, args) of
     (Cons, [a, b]) -> Right $ a `Pair` b
@@ -94,11 +99,11 @@ apply (BuiltIn op) args =
     (Cdr, _:_) -> errNArgs 1
     (Cdr, []) -> errNArgs 1
   where
-    errType expected got = Left $ "wrong type for operator " ++ (show op)
+    errType expected got = Left $ "wrong type for operator " ++ show op
       ++ ": expected " ++ expected ++ ", got " ++ got
-    errNArgs :: Int -> Res a 
-    errNArgs n = Left $ "wrong number of args to " ++ (show op) ++ ": expected " 
-      ++ (show n) ++ ", got " ++ (show $ length args)
+    errNArgs :: Int -> Res a
+    errNArgs n = Left $ "wrong number of args to " ++ show op ++ ": expected "
+      ++ show n ++ ", got " ++ show (length args)
 
 
 eval :: Env -> Sxpr -> Either Err Value

@@ -64,8 +64,12 @@ instance Arbitrary ST where
     , return $ ST ("(let ((x 23)) x)", pure "23")
     , return $ ST ("(let ((x 23)) y)", Nothing)
     , (\s -> ST (s, pure s)) . ('\'':) <$> smallStr
+    , test "((lambda (x) x) 7)" "7"
+    , test "(cons 2 (cons 1 '()))" "(2 1)"
+    , test "((lambda (x) (cons x '())) '(2 1))" "((2 1))"
     ]
     where
       smallStr = choose (1, 10) >>= (`vectorOf` (oneof $ map return ['a'..'z']))
+      test inp out = return $ ST (inp, pure out)
 
 
