@@ -5,7 +5,8 @@ module Fun.Scheme1
 
 import Control.Applicative
 
-import Fun.Sxpr
+import qualified Fun.Sxpr as S
+import Fun.Sxpr (Sxpr((:~)), maybeList)
 import Fun.Utils
 
 type Binding = (String, Value)
@@ -19,22 +20,22 @@ data BuiltIn
   deriving (Eq, Show)
 
 data Callable
-  = Lambda [String] Sxpr Env
+  = Lambda [String] S.Sxpr Env
   | BuiltIn BuiltIn
   deriving (Eq, Show)
 
 data Value
-  = Sxpr Sxpr
+  = Sxpr S.Sxpr
   | Callable Callable
   deriving (Eq, Show)
 
-rawBindings :: Sxpr -> Res [(String, Sxpr)]
+rawBindings :: S.Sxpr -> Res [(String, S.Sxpr)]
 rawBindings sxpr = do
   bindings <- maybeList sxpr `orL` syntaxErr "bad bindings" sxpr
   mapM kvPair bindings
 
-kvPair :: Sxpr -> Res (String, Sxpr)
-kvPair ((Sym k) :~ v :~ Nil) = Right (k, v)
+kvPair :: S.Sxpr -> Res (String, S.Sxpr)
+kvPair ((S.Sym k) :~ v :~ S.Nil) = Right (k, v)
 kvPair sxpr = Left $ syntaxErr "expected name-value pair" sxpr
 
 evalBindings :: Env -> [(String, Sxpr)] -> Res Env
@@ -49,7 +50,7 @@ toArgList e = do
   l <- maybeList e `orL` syntaxErr "not an argument list" e
   mapM check l
     where
-      check (Sym a) = Right a
+      check (S.Sym a) = Right a
       check x = Left $ syntaxErr "Not a valid symbol: " x
 
 ensureCallable :: Value -> Res Callable
@@ -69,17 +70,17 @@ apply _ _ = undefined
 eval :: Env -> Sxpr -> Either Err Value
 eval env sxpr =
   case sxpr of
-    Qt _ -> Right $ Sxpr sxpr
-    Nil -> Right $ Sxpr Nil
-    Lit _ -> Right $ Sxpr sxpr
-    Sym sym -> case lookup sym env of
+    S.Qt _ -> Right $ Sxpr sxpr
+    S.Nil -> Right $ Sxpr S.Nil
+    S.Lit _ -> Right $ Sxpr sxpr
+    S.Sym sym -> case lookup sym env of
       Just v -> Right v
       Nothing -> Left $ "undefined symbol: " ++ sym
-    Sym "lambda" :~ args :~ body :~ Nil ->
+    S.Sym "lambda" :~ args :~ body :~ S.Nil ->
       do
         argList <- toArgList args
         return $ Callable $ Lambda argList body env
-    Sym "let" :~ bindings :~ body :~ Nil ->
+    S.Sym "let" :~ bindings :~ body :~ S.Nil ->
       do
         bindings' <- rawBindings bindings
         updEnv <- evalBindings env bindings'
