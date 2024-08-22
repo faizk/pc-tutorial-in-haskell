@@ -30,7 +30,7 @@ prop_roundTripSxpr' (Rendering x s) =
 prop_SchemeEval :: ST -> Bool
 prop_SchemeEval st = case st of
   ST (inp, Just out) ->
-    (eval <$> parse inp) == (Right . Fun.Scheme1.Sxpr <$> parse out)
+    (eval <$> parse inp) == (Right . Fun.Scheme1.fromSxpr <$> parse out)
   ST (inp, Nothing) ->
     not (any (isRight . eval) (parse inp))
   where

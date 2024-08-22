@@ -1,6 +1,7 @@
 module Fun.Scheme1
     ( eval
     , Value(..)
+    , fromSxpr
     ) where
 
 import Control.Applicative
@@ -25,9 +26,25 @@ data Callable
   deriving (Eq, Show)
 
 data Value
-  = Sxpr S.Sxpr
+  = Nil
+  | Lit S.Val
+  | Sym String
+  | Pair Value Value
+  | Qt Value
+  | Qqt Value
+  | Uqt Value
   | Callable Callable
   deriving (Eq, Show)
+
+fromSxpr :: Sxpr -> Value
+fromSxpr e = case e of
+  S.Nil -> Nil
+  S.Lit v -> Lit v
+  S.Sym s -> Sym s
+  a :~ b -> fromSxpr a `Pair` fromSxpr b
+  S.Qt x -> Qt $ fromSxpr x
+  S.Qqt x -> Qqt $ fromSxpr x
+  S.Uqt x -> Uqt $ fromSxpr x
 
 rawBindings :: S.Sxpr -> Res [(String, S.Sxpr)]
 rawBindings sxpr = do
@@ -70,9 +87,9 @@ apply _ _ = undefined
 eval :: Env -> Sxpr -> Either Err Value
 eval env sxpr =
   case sxpr of
-    S.Qt _ -> Right $ Sxpr sxpr
-    S.Nil -> Right $ Sxpr S.Nil
-    S.Lit _ -> Right $ Sxpr sxpr
+    S.Qt x -> Right $ Qt $ fromSxpr x
+    S.Nil -> Right Nil
+    S.Lit v -> Right $ Lit v
     S.Sym sym -> case lookup sym env of
       Just v -> Right v
       Nothing -> Left $ "undefined symbol: " ++ sym
