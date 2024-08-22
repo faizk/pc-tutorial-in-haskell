@@ -81,7 +81,24 @@ apply (Lambda fArgs body env) args =
     eval (updateEnv argsEnv env) body
   where
     check = undefined
-apply _ _ = undefined
+apply (BuiltIn op) args =
+  case (op, args) of
+    (Cons, [a, b]) -> Right $ a `Pair` b
+    (Cons, _) -> errNArgs 2
+    (Car, [h `Pair` _]) -> Right h
+    (Car, [a]) -> errType "cons" (show a)
+    (Car, _:_) -> errNArgs 1
+    (Car, []) -> errNArgs 1
+    (Cdr, [_ `Pair` t]) -> Right t
+    (Cdr, [a]) -> errType "cons" (show a)
+    (Cdr, _:_) -> errNArgs 1
+    (Cdr, []) -> errNArgs 1
+  where
+    errType expected got = Left $ "wrong type for operator " ++ (show op)
+      ++ ": expected " ++ expected ++ ", got " ++ got
+    errNArgs :: Int -> Res a 
+    errNArgs n = Left $ "wrong number of args to " ++ (show op) ++ ": expected " 
+      ++ (show n) ++ ", got " ++ (show $ length args)
 
 
 eval :: Env -> Sxpr -> Either Err Value
