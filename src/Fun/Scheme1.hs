@@ -63,9 +63,8 @@ evalBindings env = mapM f
 
 evalBindingsRec :: Env -> [(String, Sxpr)] -> Res Env
 evalBindingsRec env = foldl f (Right env)
-  where f envSoFar (binding, expr) = envSoFar >>=
-          (\env -> (,) binding <$> eval env expr) >>=
-            (\b -> return $ b : env)
+  where f envSoFar (binding, expr) =
+          flip (:) env . (,) binding <$> (envSoFar >>= flip eval expr)
 
 updateEnv :: Env -> Env -> Env
 updateEnv new old = new ++ old -- TODO: slow
