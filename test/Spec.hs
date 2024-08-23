@@ -1,3 +1,5 @@
+{-# LANGUAGE QuasiQuotes #-}
+
 import Test.QuickCheck
 import qualified Fun.Json as J
 import qualified Fun.Sxpr as S
@@ -6,6 +8,8 @@ import qualified Fun.PC1.Sxpr
 import Fun.Utils (Render(..), Rendering(..))
 import qualified Fun.Scheme1
 import Data.Either (isRight)
+
+import Text.RawString.QQ
 
 newtype ST = ST (String, Maybe String) deriving Show
 
@@ -37,7 +41,6 @@ prop_SchemeEval st = case st of
     eval = Fun.Scheme1.eval Fun.Scheme1.initEnv
     parse s = fst <$> Fun.PC1.Sxpr.sxprP s
 
-
 main :: IO ()
 main = do
   verboseCheckWith args  prop_roundTrips
@@ -68,9 +71,13 @@ instance Arbitrary ST where
     , test "(cons 2 1)" "(2 . 1)"
     , test "(cons 2 (cons 1 '()))" "(2 1)"
     , test "((lambda (x) (cons x '())) '(2 1))" "((2 1))"
+    , test [r|
+        (let* ((x 2)
+               (y (* x x)))
+            y)
+        |] "4"
     ]
     where
       smallStr = choose (1, 10) >>= (`vectorOf` (oneof $ map return ['a'..'z']))
       test inp out = return $ ST (inp, pure out)
-
 
