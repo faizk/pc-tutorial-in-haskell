@@ -139,6 +139,10 @@ apply (BuiltIn op) args =
     toBool b = Lit $ if b then S.T else S.F
     bin a f b = f <$> asNumber a <*> asNumber b
 
+asBool :: Value -> Res Bool
+asBool (Lit S.T) = Right True
+asBool (Lit S.F) = Right False
+asBool bad = Left $ "type error: not a boolean: " ++ show bad
 
 eval :: Env -> Sxpr -> Either Err Value
 eval env sxpr =
@@ -163,6 +167,10 @@ eval env sxpr =
         bindings' <- rawBindings bindings
         updEnv <- evalBindingsRec env bindings'
         eval (updateEnv updEnv env) body
+    S.Sym "if" :~ condE :~ thenE :~ elseE :~ S.Nil ->
+      do
+        cond <- eval env condE >>= asBool
+        if cond then eval env thenE else eval env elseE
     fxpr :~ argsXpr ->
       do
         argXprList <- maybeList argsXpr `orL` syntaxErr "invalid argument" argsXpr
