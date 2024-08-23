@@ -137,7 +137,7 @@ apply (BuiltIn op) args =
     asNumber (Lit (S.Num n)) = Right n
     asNumber v = Left $ "type error: not a number: " ++ show v
     toBool b = Lit $ if b then S.T else S.F
-    bin a op b = (op <$> asNumber a <*> asNumber b)
+    bin a f b = f <$> asNumber a <*> asNumber b
 
 
 eval :: Env -> Sxpr -> Either Err Value
