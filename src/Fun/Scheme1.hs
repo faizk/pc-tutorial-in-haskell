@@ -19,7 +19,7 @@ type Res a = Either Err a
 
 data BuiltIn
   = Cons | Car | Cdr
-  | Prod | Sum | Div | Minus
+  | Prod | Sum | Div | Minus | Eq | Lt | Lte | Gt | Gte
   deriving (Eq, Show)
 
 data Callable
@@ -113,6 +113,17 @@ apply (BuiltIn op) args =
     (Minus, [a, b]) -> Lit . S.Num <$> ((-) <$> asNumber a <*> asNumber b)
     (Minus, _) -> errNArgs 2
 
+    (Eq, [l,r]) -> toBool <$> bin l (==) r
+    (Eq, _) -> errNArgs 2
+    (Gt, [l, r]) -> toBool <$> bin l (>) r
+    (Gt, _) -> errNArgs 2
+    (Gte, [l, r]) -> toBool <$> bin l (>=) r
+    (Gte, _) -> errNArgs 2
+    (Lt, [l, r]) -> toBool <$> bin l (<) r
+    (Lt, _) -> errNArgs 2
+    (Lte, [l, r]) -> toBool <$> bin l (<=) r
+    (Lte, _) -> errNArgs 2
+
   where
     errType expected got = Left $ "wrong type for operator " ++ show op
       ++ ": expected " ++ expected ++ ", got " ++ got
@@ -121,6 +132,8 @@ apply (BuiltIn op) args =
       ++ show n ++ ", got " ++ show (length args)
     asNumber (Lit (S.Num n)) = Right n
     asNumber v = Left $ "type error: not a number: " ++ show v
+    toBool b = Lit $ if b then S.T else S.F
+    bin a op b = (op <$> asNumber a <*> asNumber b)
 
 
 eval :: Env -> Sxpr -> Either Err Value
@@ -168,6 +181,11 @@ initEnv =
       , ("+", Sum)
       , ("/", Div)
       , ("-", Minus)
+      , ("=", Eq)
+      , ("<", Lt)
+      , (">", Gt)
+      , ("<=", Lte)
+      , (">=", Gte)
       ]
 
 syntaxErr :: String -> Sxpr -> String
