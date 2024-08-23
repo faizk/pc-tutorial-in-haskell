@@ -76,6 +76,10 @@ instance Arbitrary ST where
                (y (* x x)))
             y)
         |] "4"
+    , test "(+ 4 7 9)" "20"
+    , test "(- 71 8)" "63"
+    , test "(* 13 7)" "91"
+    , test "(/ 22 7)" "3"
     ]
     where
       smallStr = choose (1, 10) >>= (`vectorOf` (oneof $ map return ['a'..'z']))

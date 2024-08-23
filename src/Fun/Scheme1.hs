@@ -18,8 +18,8 @@ type Err = String
 type Res a = Either Err a
 
 data BuiltIn
-  = Cons| Car | Cdr
-  | Prod
+  = Cons | Car | Cdr
+  | Prod | Sum | Div | Minus
   deriving (Eq, Show)
 
 data Callable
@@ -105,7 +105,14 @@ apply (BuiltIn op) args =
     (Cdr, [a]) -> errType "cons" (show a)
     (Cdr, _:_) -> errNArgs 1
     (Cdr, []) -> errNArgs 1
-    (Prod, _) -> Lit . S.Num . sum <$> mapM asNumber args
+
+    (Prod, _) -> Lit . S.Num . product <$> mapM asNumber args
+    (Sum, _) -> Lit . S.Num . sum <$> mapM asNumber args
+    (Div, [a, b]) -> Lit . S.Num <$> (div <$> asNumber a <*> asNumber b)
+    (Div, _) -> errNArgs 2
+    (Minus, [a, b]) -> Lit . S.Num <$> ((-) <$> asNumber a <*> asNumber b)
+    (Minus, _) -> errNArgs 2
+
   where
     errType expected got = Left $ "wrong type for operator " ++ show op
       ++ ": expected " ++ expected ++ ", got " ++ got
@@ -158,6 +165,9 @@ initEnv =
       , ("car", Car)
       , ("cdr", Car)
       , ("*", Prod)
+      , ("+", Sum)
+      , ("/", Div)
+      , ("-", Minus)
       ]
 
 syntaxErr :: String -> Sxpr -> String
