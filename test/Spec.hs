@@ -97,7 +97,22 @@ instance Arbitrary ST where
     , test "(empty? (cdr '(a)))" "#f"
 
     , test "(if (= 1 1) 'y 'n)" "y"
-    , test "(if (= 2 1) 'y 'b)" "n"
+    , test "(if (= 2 1) 'y 'n)" "n"
+
+    , test [r|
+       (let
+         ((Y
+           (lambda (h)
+             ((lambda (f) (f f))
+              (lambda (f) (h (lambda (x) ((f f) x)))))))
+          (fact
+            (lambda (self)
+              (lambda (n)
+                (if (= n 0) 1
+                  (* n (self (- n 1))))))))
+
+          ((Y fact) 7))
+      |] "5040"
     ]
     where
       smallStr = choose (1, 10) >>= (`vectorOf` (oneof $ map return ['a'..'z']))

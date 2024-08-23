@@ -67,6 +67,12 @@ evalBindingsRec env = foldl f (Right env)
   where f envSoFar (binding, expr) =
           flip (:) env . (,) binding <$> (envSoFar >>= flip eval expr)
 
+evalLet :: Env -> (Env -> [(String, Sxpr)] -> Res Env) -> Sxpr -> Sxpr -> Res Value
+evalLet env evalF bindings body = do
+  bindings' <- rawBindings bindings
+  updEnv <- evalF env bindings'
+  eval (updateEnv updEnv env) body
+
 updateEnv :: Env -> Env -> Env
 updateEnv new old = new ++ old -- TODO: slow
 
@@ -91,9 +97,10 @@ apply (Lambda fArgs body env) args =
     nFArgs = length fArgs
     nArgs = length args
     check = case nFArgs `compare` nArgs of
-      LT -> Left $ "too many arguments, got " ++ show nArgs ++ ", expected " ++ show nFArgs
-      GT -> Left $ "too few arguments, got " ++ show nArgs ++ ", expected " ++ show nFArgs
+      LT -> Left $ "too many arguments:" ++ expectedVsGot
+      GT -> Left $ "too few arguments:" ++ expectedVsGot
       EQ -> Right $ fArgs `zip` args
+    expectedVsGot = "got " ++ show nArgs ++ ", expected " ++ show nFArgs
 apply (BuiltIn op) args =
   case (op, args) of
     (Cons, [a, b]) -> Right $ a `Pair` b
@@ -111,7 +118,7 @@ apply (BuiltIn op) args =
     (Sum, _) -> Lit . S.Num . sum <$> mapM asNumber args
     (Div, [a, b]) -> Lit . S.Num <$> bin a div b
     (Div, _) -> errNArgs 2
-    (Minus, [a, b]) -> Lit . S.Num <$> bin a (-) b 
+    (Minus, [a, b]) -> Lit . S.Num <$> bin a (-) b
     (Minus, _) -> errNArgs 2
 
     (Eq, [l,r]) -> toBool <$> bin l (==) r
@@ -139,11 +146,6 @@ apply (BuiltIn op) args =
     toBool b = Lit $ if b then S.T else S.F
     bin a f b = f <$> asNumber a <*> asNumber b
 
-asBool :: Value -> Res Bool
-asBool (Lit S.T) = Right True
-asBool (Lit S.F) = Right False
-asBool bad = Left $ "type error: not a boolean: " ++ show bad
-
 eval :: Env -> Sxpr -> Either Err Value
 eval env sxpr =
   case sxpr of
@@ -158,19 +160,18 @@ eval env sxpr =
         argList <- toArgList args
         return $ Callable $ Lambda argList body env
     S.Sym "let" :~ bindings :~ body :~ S.Nil ->
-      do
-        bindings' <- rawBindings bindings
-        updEnv <- evalBindings env bindings'
-        eval (updateEnv updEnv env) body
+      evalLet env evalBindings bindings body
     S.Sym "let*" :~ bindings :~ body :~ S.Nil ->
-      do
-        bindings' <- rawBindings bindings
-        updEnv <- evalBindingsRec env bindings'
-        eval (updateEnv updEnv env) body
+      evalLet env evalBindingsRec bindings body
     S.Sym "if" :~ condE :~ thenE :~ elseE :~ S.Nil ->
       do
         cond <- eval env condE >>= asBool
         if cond then eval env thenE else eval env elseE
+      where
+        asBool (Lit S.T) = Right True
+        asBool (Lit S.F) = Right False
+        asBool bad = Left $ "type error: not a boolean: " ++ show bad
+
     fxpr :~ argsXpr ->
       do
         argXprList <- maybeList argsXpr `orL` syntaxErr "invalid argument" argsXpr
