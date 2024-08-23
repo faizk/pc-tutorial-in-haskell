@@ -109,9 +109,9 @@ apply (BuiltIn op) args =
 
     (Prod, _) -> Lit . S.Num . product <$> mapM asNumber args
     (Sum, _) -> Lit . S.Num . sum <$> mapM asNumber args
-    (Div, [a, b]) -> Lit . S.Num <$> (div <$> asNumber a <*> asNumber b)
+    (Div, [a, b]) -> Lit . S.Num <$> bin a div b
     (Div, _) -> errNArgs 2
-    (Minus, [a, b]) -> Lit . S.Num <$> ((-) <$> asNumber a <*> asNumber b)
+    (Minus, [a, b]) -> Lit . S.Num <$> bin a (-) b 
     (Minus, _) -> errNArgs 2
 
     (Eq, [l,r]) -> toBool <$> bin l (==) r
