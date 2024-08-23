@@ -19,6 +19,7 @@ type Res a = Either Err a
 
 data BuiltIn
   = Cons| Car | Cdr
+  | Prod
   deriving (Eq, Show)
 
 data Callable
@@ -60,6 +61,12 @@ evalBindings :: Env -> [(String, Sxpr)] -> Res Env
 evalBindings env = mapM f
   where f (binding, expr) = (,) binding <$> eval env expr
 
+evalBindingsRec :: Env -> [(String, Sxpr)] -> Res Env
+evalBindingsRec env = foldl f (Right env)
+  where f envSoFar (binding, expr) = envSoFar >>=
+          (\env -> (,) binding <$> eval env expr) >>=
+            (\b -> return $ b : env)
+
 updateEnv :: Env -> Env -> Env
 updateEnv new old = new ++ old -- TODO: slow
 
@@ -99,12 +106,15 @@ apply (BuiltIn op) args =
     (Cdr, [a]) -> errType "cons" (show a)
     (Cdr, _:_) -> errNArgs 1
     (Cdr, []) -> errNArgs 1
+    (Prod, _) -> Lit . S.Num . sum <$> mapM asNumber args
   where
     errType expected got = Left $ "wrong type for operator " ++ show op
       ++ ": expected " ++ expected ++ ", got " ++ got
     errNArgs :: Int -> Res a
     errNArgs n = Left $ "wrong number of args to " ++ show op ++ ": expected "
       ++ show n ++ ", got " ++ show (length args)
+    asNumber (Lit (S.Num n)) = Right n
+    asNumber v = Left $ "type error: not a number: " ++ show v
 
 
 eval :: Env -> Sxpr -> Either Err Value
@@ -125,6 +135,11 @@ eval env sxpr =
         bindings' <- rawBindings bindings
         updEnv <- evalBindings env bindings'
         eval (updateEnv updEnv env) body
+    S.Sym "let*" :~ bindings :~ body :~ S.Nil ->
+      do
+        bindings' <- rawBindings bindings
+        updEnv <- evalBindingsRec env bindings'
+        eval (updateEnv updEnv env) body
     fxpr :~ argsXpr ->
       do
         argXprList <- maybeList argsXpr `orL` syntaxErr "invalid argument" argsXpr
@@ -143,6 +158,7 @@ initEnv =
       [ ("cons", Cons)
       , ("car", Car)
       , ("cdr", Car)
+      , ("*", Prod)
       ]
 
 syntaxErr :: String -> Sxpr -> String
