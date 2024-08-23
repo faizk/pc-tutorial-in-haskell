@@ -20,6 +20,7 @@ type Res a = Either Err a
 data BuiltIn
   = Cons | Car | Cdr
   | Prod | Sum | Div | Minus | Eq | Lt | Lte | Gt | Gte
+  | IsEmpty
   deriving (Eq, Show)
 
 data Callable
@@ -124,6 +125,9 @@ apply (BuiltIn op) args =
     (Lte, [l, r]) -> toBool <$> bin l (<=) r
     (Lte, _) -> errNArgs 2
 
+    (IsEmpty, [x]) -> Right $ toBool $ x == Nil
+    (IsEmpty, _) -> errNArgs 1
+
   where
     errType expected got = Left $ "wrong type for operator " ++ show op
       ++ ": expected " ++ expected ++ ", got " ++ got
@@ -186,6 +190,7 @@ initEnv =
       , (">", Gt)
       , ("<=", Lte)
       , (">=", Gte)
+      , ("empty?", IsEmpty)
       ]
 
 syntaxErr :: String -> Sxpr -> String

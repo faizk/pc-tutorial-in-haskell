@@ -90,6 +90,11 @@ instance Arbitrary ST where
     , test "(< 17 71)" "#t"
     , test "(>= 4 1)" "#t"
     , test "(>= 4 5)" "#f"
+
+    , test "(empty? '())" "#t"
+    , test "(empty? '(a))" "#f"
+    , test "(empty? 21)" "#f"
+    , test "(empty? (cdr '(a)))" "#f"
     ]
     where
       smallStr = choose (1, 10) >>= (`vectorOf` (oneof $ map return ['a'..'z']))
