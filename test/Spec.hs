@@ -69,6 +69,7 @@ main = do
         .&&. prop_roundTripSxpr
         .&&. prop_roundTripSxpr'
         .&&. prop_SchemeEval
+        .&&. prop_SchemeEval2
 
 instance Arbitrary ST where
   arbitrary = oneof
