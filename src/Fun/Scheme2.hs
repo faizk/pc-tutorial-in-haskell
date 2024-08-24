@@ -234,7 +234,7 @@ builtIns :: [(String, Value)]
 builtIns = map (\(k, v) -> (k, Callable $ BuiltIn v))
   [ ("cons", Cons)
   , ("car", Car)
-  , ("cdr", Car)
+  , ("cdr", Cdr)
   , ("*", Prod)
   , ("+", Sum)
   , ("/", Div)
