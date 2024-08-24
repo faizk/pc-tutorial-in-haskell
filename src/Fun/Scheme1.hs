@@ -189,7 +189,7 @@ initEnv =
     builtIns' =
       [ ("cons", Cons)
       , ("car", Car)
-      , ("cdr", Car)
+      , ("cdr", Cdr)
       , ("*", Prod)
       , ("+", Sum)
       , ("/", Div)

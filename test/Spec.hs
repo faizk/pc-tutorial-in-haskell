@@ -136,7 +136,8 @@ instance Arbitrary ST where
     , test "(empty? '())" "#t"
     , test "(empty? '(a))" "#f"
     , test "(empty? 21)" "#f"
-    , test "(empty? (cdr '(a)))" "#f"
+    , test "(empty? (cdr '(a b)))" "#f"
+    , test "(empty? (cdr '(a)))" "#t"
 
     , test "(if (= 1 1) 'y 'n)" "y"
     , test "(if (= 2 1) 'y 'n)" "n"
