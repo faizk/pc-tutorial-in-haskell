@@ -1,9 +1,12 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE TupleSections #-}
+
 module Fun.Scheme2
     ( eval
     , initEnv
     , Value(..)
     , fromSxpr
+    , evalBindingsRec
     ) where
 
 import Control.Applicative
@@ -12,7 +15,7 @@ import qualified Fun.Sxpr as S
 import Fun.Sxpr (Sxpr((:~)), maybeList)
 import Fun.Utils
 import Data.Traversable (mapAccumM)
-import Data.Foldable (foldlM)
+import Data.Foldable (foldlM, foldrM)
 
 data Loc where
   Loc :: Int -> Loc
@@ -81,14 +84,28 @@ evalBindings env = mapAccumM f
         g = bind . uncurry alloc
         bind (mem', loc) = (mem', (binding, loc))
 
-evalBindingsRec :: Env -> Mem -> [(String, Sxpr)] -> Res (Mem, Env)
-evalBindingsRec env mem = foldlM f (mem, env)
+evalBindingsStar :: Env -> Mem -> [(String, Sxpr)] -> Res (Mem, Env)
+evalBindingsStar env mem = foldlM f (mem, env)
   where
     f :: (Mem, Env) -> (String, Sxpr) -> Res (Mem, Env)
     f (mem', env') (binding, sxpr) = g <$> eval (env', mem') sxpr
       where
         g = bind . uncurry alloc
         bind (m, l) = (m, (binding, l) : env')
+
+evalBindingsRec :: Env -> Mem -> [(String, Sxpr)] -> Res (Mem, Env)
+evalBindingsRec env mem bindings =
+  (, newEnv) <$> foldlM f mem (map snd bindings)
+    where
+      f :: Mem -> Sxpr -> Res Mem
+      f mem' sxpr = do
+        (mem'', v) <- eval (newEnv, mem') sxpr
+        return $ fst $ alloc mem'' v
+
+      newEnv = newAllocs ++ env
+      newLocs = map (Loc . (+) base) [0..]
+      newAllocs = map fst bindings `zip` newLocs
+      base = length mem
 
 evalLet :: Env -> Mem -> (Env -> Mem -> [(String, Sxpr)] -> Res (Mem, Env)) -> Sxpr -> Sxpr -> Res (Mem, Value)
 evalLet env mem evalF bindings body = do
@@ -189,6 +206,8 @@ eval (env, mem) sxpr =
     S.Sym "let" :~ bindings :~ body :~ S.Nil ->
       evalLet env mem evalBindings bindings body
     S.Sym "let*" :~ bindings :~ body :~ S.Nil ->
+      evalLet env mem evalBindingsStar bindings body
+    S.Sym "letrec" :~ bindings :~ body :~ S.Nil ->
       evalLet env mem evalBindingsRec bindings body
     S.Sym "if" :~ condE :~ thenE :~ elseE :~ S.Nil ->
       do
