@@ -31,6 +31,7 @@ library
       Fun.PC1.Json
       Fun.PC1.Sxpr
       Fun.Scheme1
+      Fun.Scheme2
       Fun.Sxpr
       Fun.Utils
   other-modules:

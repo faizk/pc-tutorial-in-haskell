@@ -7,6 +7,7 @@ import qualified Fun.PC1.Json
 import qualified Fun.PC1.Sxpr
 import Fun.Utils (Render(..), Rendering(..))
 import qualified Fun.Scheme1
+import qualified Fun.Scheme2
 import Data.Either (isRight)
 
 import Text.RawString.QQ
@@ -39,6 +40,16 @@ prop_SchemeEval st = case st of
     not (any (isRight . eval) (parse inp))
   where
     eval = Fun.Scheme1.eval Fun.Scheme1.initEnv
+    parse s = fst <$> Fun.PC1.Sxpr.sxprP s
+
+prop_SchemeEval2 :: ST -> Bool
+prop_SchemeEval2 st = case st of
+  ST (inp, Just out) ->
+    (eval <$> parse inp) == (Right . Fun.Scheme2.fromSxpr <$> parse out)
+  ST (inp, Nothing) ->
+    not (any (isRight . eval) (parse inp))
+  where
+    eval s = snd <$> Fun.Scheme2.eval Fun.Scheme2.initEnv [] s
     parse s = fst <$> Fun.PC1.Sxpr.sxprP s
 
 main :: IO ()
