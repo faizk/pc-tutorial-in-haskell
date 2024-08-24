@@ -11,6 +11,8 @@ import Control.Applicative
 import qualified Fun.Sxpr as S
 import Fun.Sxpr (Sxpr((:~)), maybeList)
 import Fun.Utils
+import Data.Traversable (mapAccumM)
+import Data.Foldable (foldlM)
 
 data Loc where
   Loc :: Int -> Loc
@@ -70,24 +72,29 @@ kvPair :: S.Sxpr -> Res (String, S.Sxpr)
 kvPair ((S.Sym k) :~ v :~ S.Nil) = Right (k, v)
 kvPair sxpr = Left $ syntaxErr "expected name-value pair" sxpr
 
-evalBindings :: Env -> Mem -> [(String, Sxpr)] -> Res (Env, Mem)
-evalBindings env mem =
-  undefined
-  -- mapM f
-  --  where f (binding, expr) = (,) binding <$> eval env mem expr
+evalBindings :: Env -> Mem -> [(String, Sxpr)] -> Res (Mem, Env)
+evalBindings env = mapAccumM f
+  where
+    f :: Mem -> (String, Sxpr) -> Res (Mem, Binding)
+    f mem (binding, sxpr) = g <$> eval (env, mem) sxpr
+      where
+        g = bind . uncurry alloc
+        bind (mem', loc) = (mem', (binding, loc))
 
-evalBindingsRec :: Env -> Mem -> [(String, Sxpr)] -> Res (Env, Mem)
-evalBindingsRec env =
-  undefined
---  foldl f (Right env)
---    where f envSoFar (binding, expr) =
---            flip (:) env . (,) binding <$> (envSoFar >>= flip eval expr)
+evalBindingsRec :: Env -> Mem -> [(String, Sxpr)] -> Res (Mem, Env)
+evalBindingsRec env mem = foldlM f (mem, env)
+  where
+    f :: (Mem, Env) -> (String, Sxpr) -> Res (Mem, Env)
+    f (mem', env') (binding, sxpr) = g <$> eval (env', mem') sxpr
+      where
+        g = bind . uncurry alloc
+        bind (m, l) = (m, (binding, l) : env')
 
-evalLet :: Env -> Mem -> (Env -> Mem -> [(String, Sxpr)] -> Res (Env, Mem)) -> Sxpr -> Sxpr -> Res (Mem, Value)
+evalLet :: Env -> Mem -> (Env -> Mem -> [(String, Sxpr)] -> Res (Mem, Env)) -> Sxpr -> Sxpr -> Res (Mem, Value)
 evalLet env mem evalF bindings body = do
   bindings' <- rawBindings bindings
-  (updEnv, mem') <- evalF env mem bindings'
-  eval (updateEnv updEnv env, mem') body
+  (mem', env') <- evalF env mem bindings'
+  eval (updateEnv env' env, mem') body
 
 updateEnv :: Env -> Env -> Env
 updateEnv new old = new ++ old -- TODO: slow
@@ -115,8 +122,11 @@ apply (Lambda fArgs body env) args mem =
     check = case nFArgs `compare` nArgs of
       LT -> Left $ "too many arguments:" ++ expectedVsGot
       GT -> Left $ "too few arguments:" ++ expectedVsGot
-      EQ -> Right $ allocArgs fArgs args
-    allocArgs fArgs args = undefined
+      EQ -> Right $ foldl g (mem, []) $ fArgs `zip` args
+    g (m, e) (name, val) = (m', e')
+      where
+        (m', loc) = alloc m val
+        e' = (name, loc) : e
     expectedVsGot = "got " ++ show nArgs ++ ", expected " ++ show nFArgs
 apply (BuiltIn op) args mem = (,) mem <$> res
   where
@@ -192,11 +202,12 @@ eval (env, mem) sxpr =
     fxpr :~ argsXpr ->
       do
         argXprList <- maybeList argsXpr `orL` syntaxErr "invalid argument" argsXpr
-        (mem', argVals) <- f <$> mapM (eval (env, mem)) argXprList
-        fVal <- eval (env, mem') fxpr >>= ensureCallable . snd
-        apply fVal argVals mem'
+        (mem', argVals) <- mapAccumM g mem argXprList
+        (mem'', maybeFunVal) <- eval (env, mem') fxpr
+        fVal <- ensureCallable maybeFunVal
+        apply fVal argVals mem''
       where
-        f l = undefined
+        g m = eval (env, m)
     w ->
       Left $ "TODO: " ++ show w
 

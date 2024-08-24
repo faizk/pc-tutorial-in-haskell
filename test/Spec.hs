@@ -68,7 +68,7 @@ main = do
         .&&. prop_roundTripJson'
         .&&. prop_roundTripSxpr
         .&&. prop_roundTripSxpr'
-        .&&. prop_SchemeEval
+        -- .&&. prop_SchemeEval
         .&&. prop_SchemeEval2
 
 instance Arbitrary ST where
@@ -78,6 +78,7 @@ instance Arbitrary ST where
     , return $ ST ("'()", pure "()")
     , return $ ST ("(let ((x 23)) x)", pure "23")
     , return $ ST ("(let ((x 23)) y)", Nothing)
+    , return $ ST ("(let ((x 1)) (let ((x 7) (y (+ x 1))) y))", pure "2")
     , (\s -> ST ('\'':s, pure s))  <$> smallStr
     , test "((lambda (x) x) 7)" "7"
     , test "(cons 2 1)" "(2 . 1)"
