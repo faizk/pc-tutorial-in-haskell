@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs #-}
 module Fun.Scheme2
     ( eval
     , initEnv
@@ -11,12 +12,19 @@ import qualified Fun.Sxpr as S
 import Fun.Sxpr (Sxpr((:~)), maybeList)
 import Fun.Utils
 
-data Loc = Loc Int deriving (Show, Eq)
+data Loc where
+  Loc :: Int -> Loc
+  deriving (Show, Eq)
 
 type Binding = (String, Loc)
 type Env = [Binding]
+
 type Allocation = (Loc, Value)
 type Mem = [Allocation]
+
+alloc :: Mem -> Value -> (Mem, Loc)
+alloc mem v = ((newLoc, v) : mem, newLoc)
+  where newLoc = Loc $ length mem
 
 type Err = String
 type Res a = Either Err a
@@ -79,7 +87,7 @@ evalLet :: Env -> Mem -> (Env -> Mem -> [(String, Sxpr)] -> Res (Env, Mem)) -> S
 evalLet env mem evalF bindings body = do
   bindings' <- rawBindings bindings
   (updEnv, mem') <- evalF env mem bindings'
-  eval (updateEnv updEnv env) mem' body
+  eval (updateEnv updEnv env, mem') body
 
 updateEnv :: Env -> Env -> Env
 updateEnv new old = new ++ old -- TODO: slow
@@ -100,7 +108,7 @@ apply :: Callable -> [Value] -> Mem -> Res (Mem, Value)
 apply (Lambda fArgs body env) args mem =
   do
     (mem', argsEnv) <- check
-    eval (updateEnv argsEnv env) mem' body
+    eval (updateEnv argsEnv env, mem') body
   where
     nFArgs = length fArgs
     nArgs = length args
@@ -155,8 +163,8 @@ apply (BuiltIn op) args mem = (,) mem <$> res
     toBool b = Lit $ if b then S.T else S.F
     bin a f b = f <$> asNumber a <*> asNumber b
 
-eval :: Env -> Mem -> Sxpr -> Either Err (Mem, Value)
-eval env mem sxpr =
+eval :: (Env, Mem) -> Sxpr -> Either Err (Mem, Value)
+eval (env, mem) sxpr =
   case sxpr of
     S.Qt x -> Right (mem, fromSxpr x)
     S.Nil -> Right (mem, Nil)
@@ -174,8 +182,8 @@ eval env mem sxpr =
       evalLet env mem evalBindingsRec bindings body
     S.Sym "if" :~ condE :~ thenE :~ elseE :~ S.Nil ->
       do
-        cond <- eval env mem condE >>= asBool . snd
-        if cond then eval env mem thenE else eval env mem elseE
+        cond <- eval (env, mem) condE >>= asBool . snd
+        if cond then eval (env, mem) thenE else eval (env, mem) elseE
       where
         asBool (Lit S.T) = Right True
         asBool (Lit S.F) = Right False
@@ -184,35 +192,39 @@ eval env mem sxpr =
     fxpr :~ argsXpr ->
       do
         argXprList <- maybeList argsXpr `orL` syntaxErr "invalid argument" argsXpr
-        (mem', argVals) <- f <$> mapM (eval env mem) argXprList
-        fVal <- eval env mem' fxpr >>= ensureCallable . snd
+        (mem', argVals) <- f <$> mapM (eval (env, mem)) argXprList
+        fVal <- eval (env, mem') fxpr >>= ensureCallable . snd
         apply fVal argVals mem'
       where
         f l = undefined
     w ->
       Left $ "TODO: " ++ show w
 
-initEnv :: Env
+builtIns :: [(String, Value)]
+builtIns = map (\(k, v) -> (k, Callable $ BuiltIn v))
+  [ ("cons", Cons)
+  , ("car", Car)
+  , ("cdr", Car)
+  , ("*", Prod)
+  , ("+", Sum)
+  , ("/", Div)
+  , ("-", Minus)
+  , ("=", Eq)
+  , ("<", Lt)
+  , (">", Gt)
+  , ("<=", Lte)
+  , (">=", Gte)
+  , ("empty?", IsEmpty)
+  ]
+
+initEnv :: (Env, Mem)
 initEnv =
-  allocAll builtIns
-  where
-    allocAll = undefined
-    builtIns = [ (s, Callable $ BuiltIn b) | (s, b) <- builtIns' ]
-    builtIns' =
-      [ ("cons", Cons)
-      , ("car", Car)
-      , ("cdr", Car)
-      , ("*", Prod)
-      , ("+", Sum)
-      , ("/", Div)
-      , ("-", Minus)
-      , ("=", Eq)
-      , ("<", Lt)
-      , (">", Gt)
-      , ("<=", Lte)
-      , (">=", Gte)
-      , ("empty?", IsEmpty)
-      ]
+    foldl f ([], []) builtIns
+    where
+      f (env, mem) (name, value) = (env', mem')
+        where
+          (mem', loc) = alloc mem value
+          env' = (name, loc) : env
 
 syntaxErr :: String -> Sxpr -> String
 syntaxErr msg context = "syntax error: " ++ msg ++ " in: " ++ show context

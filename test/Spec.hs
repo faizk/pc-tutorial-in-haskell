@@ -49,7 +49,7 @@ prop_SchemeEval2 st = case st of
   ST (inp, Nothing) ->
     not (any (isRight . eval) (parse inp))
   where
-    eval s = snd <$> Fun.Scheme2.eval Fun.Scheme2.initEnv [] s
+    eval s = snd <$> Fun.Scheme2.eval Fun.Scheme2.initEnv s
     parse s = fst <$> Fun.PC1.Sxpr.sxprP s
 
 main :: IO ()
