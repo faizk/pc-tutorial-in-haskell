@@ -14,6 +14,8 @@ import Text.RawString.QQ
 
 newtype ST = ST (String, Maybe String) deriving Show
 
+newtype ST2 = ST2 (String, Maybe String) deriving Show
+
 prop_roundTripJson :: J.Json -> Bool
 prop_roundTripJson j = parsed == [(j, "")]
   where parsed = Fun.PC1.Json.parse s
@@ -42,11 +44,11 @@ prop_SchemeEval st = case st of
     eval = Fun.Scheme1.eval Fun.Scheme1.initEnv
     parse s = fst <$> Fun.PC1.Sxpr.sxprP s
 
-prop_SchemeEval2 :: ST -> Bool
+prop_SchemeEval2 :: ST2 -> Bool
 prop_SchemeEval2 st = case st of
-  ST (inp, Just out) ->
+  ST2 (inp, Just out) ->
     (eval <$> parse inp) == (Right . Fun.Scheme2.fromSxpr <$> parse out)
-  ST (inp, Nothing) ->
+  ST2 (inp, Nothing) ->
     not (any (isRight . eval) (parse inp))
   where
     eval s = snd <$> Fun.Scheme2.eval Fun.Scheme2.initEnv s
@@ -68,8 +70,35 @@ main = do
         .&&. prop_roundTripJson'
         .&&. prop_roundTripSxpr
         .&&. prop_roundTripSxpr'
-        -- .&&. prop_SchemeEval
+        .&&. prop_SchemeEval
         .&&. prop_SchemeEval2
+
+instance Arbitrary ST2 where
+  arbitrary =
+    oneof
+      [ toST2 <$> (arbitrary :: Gen ST)
+      , test [r|
+         (letrec ((len (lambda (l)
+                        (if (empty? l) 0 (+ 1 (len (cdr l))))))
+                   (l2 (cons 'a (cons 'b '())))
+                   (l7 '(1 2 3 4 5 6 7))
+                   (l0 '()))
+             (cons (len l2) (cons (len l7) (cons (len l0) '()))))
+          |] "(2 7 0)"
+      , test [r|
+          (letrec ((map (lambda (f l)
+                          (if (empty? l)
+                            l
+                            (cons (f (car l))
+                                  (map f (cdr l)))))))
+            (map (lambda (x) (+ x x))
+                 '(1 2 3)))
+          |] "(2 4 6)"
+      ]
+    where
+      toST2 (ST (inp, out)) = ST2 (inp, out)
+      test inp out = return $ ST2 (inp, pure out)
+
 
 instance Arbitrary ST where
   arbitrary = oneof
