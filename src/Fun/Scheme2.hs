@@ -194,6 +194,17 @@ eval :: (Env, Mem) -> Sxpr -> Either Err (Mem, Value)
 eval (env, mem) sxpr =
   case sxpr of
     S.Qt x -> Right (mem, fromSxpr x)
+    S.Qqt (h :~ t) -> both h t mem
+      where
+        both h' t' mem' = do
+          (mem'', hv) <- evalUq h' mem'
+          (mem''', tv) <- evalUq t' mem''
+          return (mem''', hv `Pair` tv)
+        evalUq (S.Uqt uqt) m = eval (env, m) uqt
+        evalUq (h' :~ t') m = both h' t' m
+        evalUq e m = Right (m, fromSxpr e)
+    S.Qqt x -> Right (mem, fromSxpr x)
+    S.Uqt x -> Left $ "not in qq: " ++ show x
     S.Nil -> Right (mem, Nil)
     S.Lit v -> Right (mem, Lit v)
     S.Sym sym -> case lookup sym env >>= flip lookup mem of

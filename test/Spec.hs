@@ -94,6 +94,14 @@ instance Arbitrary ST2 where
             (map (lambda (x) (+ x x))
                  '(1 2 3)))
           |] "(2 4 6)"
+
+      , test "`1" "1"
+      , test [r|`(+ 1 2)|] "(+ 1 2)"
+      , test [r|`(+ 1 ,(+ 1 2))|] "(+ 1 3)"
+      , test [r|
+          `(1 ,(cons 2 `(3 ,(+ 2 2))))
+          |] "(1 (2 3 4))"
+      , return $ ST2 (",x", Nothing)
       ]
     where
       toST2 (ST (inp, out)) = ST2 (inp, out)
@@ -156,6 +164,8 @@ instance Arbitrary ST where
 
           ((Y fact) 7))
       |] "5040"
+
+      , test [r|'(+ 1 2)|] "(+ 1 2)"
     ]
     where
       smallStr = choose (1, 10) >>= (`vectorOf` (oneof $ map return ['a'..'z']))
