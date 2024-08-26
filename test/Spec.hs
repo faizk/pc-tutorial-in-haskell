@@ -101,6 +101,13 @@ instance Arbitrary ST2 where
                  '(1 2 3)))
           |] "(2 4 6)"
 
+      , test [r|
+          (let ((mk-adder (lambda (x)
+                           (lambda (y) (+ x y)))))
+            (let ((add7 (mk-adder 7)))
+                (add7 24)))
+          |] "31"
+
       , test "`1" "1"
       , test [r|`(+ 1 2)|] "(+ 1 2)"
       , test [r|`(+ 1 ,(+ 1 2))|] "(+ 1 3)"
