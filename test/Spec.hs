@@ -5,16 +5,18 @@ import qualified Fun.Json as J
 import qualified Fun.Sxpr as S
 import qualified Fun.PC1.Json
 import qualified Fun.PC1.Sxpr
-import Fun.Utils (Render(..), Rendering(..))
+import Fun.Utils (Render(..), Rendering(..), orL)
 import qualified Fun.Scheme1
 import qualified Fun.Scheme2
-import Data.Either (isRight)
+import Data.Either (isRight, partitionEithers)
 
 import Text.RawString.QQ
+import Data.List (isSubsequenceOf)
 
 newtype ST = ST (String, Maybe String) deriving Show
 
-newtype ST2 = ST2 (String, Maybe String) deriving Show
+type ErrMatches = [String]
+newtype ST2 = ST2 (String, Either ErrMatches String) deriving Show
 
 prop_roundTripJson :: J.Json -> Bool
 prop_roundTripJson j = parsed == [(j, "")]
@@ -46,10 +48,13 @@ prop_SchemeEval st = case st of
 
 prop_SchemeEval2 :: ST2 -> Bool
 prop_SchemeEval2 st = case st of
-  ST2 (inp, Just out) ->
+  ST2 (inp, Right out) ->
     (eval <$> parse inp) == (Right . Fun.Scheme2.fromSxpr <$> parse out)
-  ST2 (inp, Nothing) ->
-    not (any (isRight . eval) (parse inp))
+  ST2 (inp, Left errMatches) ->
+    null successes && all matches failures
+      where
+        matches err = all (`isSubsequenceOf` err) errMatches
+        (failures, successes) = partitionEithers $ eval <$> parse inp
   where
     eval s = snd <$> Fun.Scheme2.eval Fun.Scheme2.initEnv s
     parse s = fst <$> Fun.PC1.Sxpr.sxprP s
@@ -77,6 +82,7 @@ instance Arbitrary ST2 where
   arbitrary =
     oneof
       [ toST2 <$> (arbitrary :: Gen ST)
+      , return $ ST2 ("(let ((x 23)) y)", Left ["undefined", "symbol: y"])
       , test [r|
          (letrec ((len (lambda (l)
                         (if (empty? l) 0 (+ 1 (len (cdr l))))))
@@ -101,10 +107,10 @@ instance Arbitrary ST2 where
       , test [r|
           `(1 ,(cons 2 `(3 ,(+ 2 2))))
           |] "(1 (2 3 4))"
-      , return $ ST2 (",x", Nothing)
+      , return $ ST2 (",x", Left ["not in qq"])
       ]
     where
-      toST2 (ST (inp, out)) = ST2 (inp, out)
+      toST2 (ST (inp, out)) = ST2 (inp, out `orL` [])
       test inp out = return $ ST2 (inp, pure out)
 
 
