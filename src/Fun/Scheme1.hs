@@ -3,6 +3,7 @@ module Fun.Scheme1
     , initEnv
     , Value(..)
     , fromSxpr
+    , Env
     ) where
 
 import Control.Applicative
@@ -38,6 +39,25 @@ data Value
   | Uqt Value
   | Callable Callable
   deriving (Eq, Show)
+
+instance Render Value where
+  render e = case e of
+    Nil -> "()"
+    Lit v -> render v
+    Sym s -> s
+    Qt s -> '\'' : render s
+    Qqt s -> '`' : render s
+    Uqt s -> ',' : render s
+    l `Pair` r -> "(" ++ inside ++ ")"
+      where
+        inside = case asList e of
+          Just list -> unwords $ map render list
+          Nothing -> render l ++ " . " ++ render r
+        asList (h `Pair` t) = (h :) <$> asList t
+        asList  Nil = pure []
+        asList  _ = Nothing
+    Callable proc ->
+      "#<proc: " ++ show proc ++ ">"
 
 fromSxpr :: Sxpr -> Value
 fromSxpr e = case e of
