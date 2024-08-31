@@ -1,5 +1,5 @@
 module Fun.PC2
-    ( Parser
+    ( Parser(..)
     , charP, char
     , anyChar
     , digitP
@@ -35,13 +35,15 @@ instance Monad Parser where
 instance MonadFail Parser where
   fail msg = Parser (\_ -> Left msg)
 
-instance Alternative Parser
+instance Alternative Parser where
+  empty = fail "nothing matched"
+  pa <|> pb = Parser (\s -> either (const $ run pb s) pure (run pa s))
 
 charP :: (Char -> Bool) -> Parser Char
 charP f = Parser p
   where p (c:cs) | f c  = Right (c, cs)
         p []            = Left "EOF"
-        p (c:_)         = Left $ "unexpected char: :" ++ [c]
+        p (c:_)         = Left $ "unexpected char: " ++ [c]
 
 char :: Char -> Parser Char
 char c = charP (== c)
