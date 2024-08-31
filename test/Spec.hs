@@ -4,6 +4,8 @@ import Test.QuickCheck
 import qualified Fun.Json as J
 import qualified Fun.Sxpr as S
 import qualified Fun.PC1.Json
+import Fun.PC2 (Parser(run))
+import qualified Fun.PC2.Json
 import qualified Fun.PC1.Sxpr
 import Fun.Utils (Render(..), Rendering(..), orL)
 import qualified Fun.Scheme1
@@ -23,6 +25,11 @@ prop_roundTripJson j = parsed == [(j, "")]
   where parsed = Fun.PC1.Json.parse s
         s      = show j
 
+prop_roundTripJson2 :: J.Json -> Bool
+prop_roundTripJson2 j = parsed == Right (j, "")
+  where parsed = run Fun.PC2.Json.parse s
+        s      = show j
+
 prop_roundTripSxpr :: S.Sxpr -> Bool
 prop_roundTripSxpr e = parsed == [(e, "")]
   where parsed = Fun.PC1.Sxpr.sxprP s
@@ -31,6 +38,10 @@ prop_roundTripSxpr e = parsed == [(e, "")]
 prop_roundTripJson' :: Rendering J.Json -> Bool
 prop_roundTripJson' (Rendering j s) =
   (fst <$> Fun.PC1.Json.parse s) == [j]
+
+prop_roundTripJson2' :: Rendering J.Json -> Bool
+prop_roundTripJson2' (Rendering j s) =
+  (fst <$> run Fun.PC2.Json.parse s) == Right j
 
 prop_roundTripSxpr' :: Rendering S.Sxpr -> Bool
 prop_roundTripSxpr' (Rendering x s) =
@@ -61,21 +72,24 @@ prop_SchemeEval2 st = case st of
 
 main :: IO ()
 main = do
-  verboseCheckWith args  prop_roundTrips
+  verboseCheckWith args (prop_roundTrips .&&. prop_Scheme)
     where
       args = Args {
         replay = Nothing,
-        maxSuccess = 100,
+        maxSuccess = 500,
         maxSize = 40,
         maxDiscardRatio = 1,
         maxShrinks = 10,
         chatty = True
       }
-      prop_roundTrips = prop_roundTripJson
+      prop_roundTrips = prop_Json .&&. prop_Sxpr
+      prop_Json = prop_roundTripJson
+        .&&. prop_roundTripJson2
         .&&. prop_roundTripJson'
-        .&&. prop_roundTripSxpr
+        .&&. prop_roundTripJson2'
+      prop_Sxpr = prop_roundTripSxpr
         .&&. prop_roundTripSxpr'
-        .&&. prop_SchemeEval
+      prop_Scheme = prop_SchemeEval
         .&&. prop_SchemeEval2
 
 instance Arbitrary ST2 where
