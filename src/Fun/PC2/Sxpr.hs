@@ -1,11 +1,11 @@
-module Fun.PC3.Sxpr
+module Fun.PC2.Sxpr
     ( sxprP
     ) where
 
 import qualified Fun.Sxpr as V (Val(..))
 import Fun.Sxpr (Sxpr(..))
 
-import Fun.PC3
+import Fun.PC2
 import Data.Char (isSpace)
 
 import Control.Applicative (Alternative(..))

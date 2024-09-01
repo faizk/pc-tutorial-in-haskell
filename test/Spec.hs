@@ -12,6 +12,7 @@ import qualified Fun.PC2.Json
 import qualified Fun.PC3.Json
 
 import qualified Fun.PC1.Sxpr
+import qualified Fun.PC2.Sxpr
 import qualified Fun.PC3.Sxpr
 
 import Fun.Utils (Render(..), Rendering(..), orL)
@@ -64,6 +65,17 @@ prop_roundTripSxpr e = parsed == [(e, "")]
 prop_roundTripSxpr' :: Rendering S.Sxpr -> Bool
 prop_roundTripSxpr' (Rendering x s) =
   (fst <$> Fun.PC1.Sxpr.sxprP s) == [x]
+
+prop_roundTripSxpr2 :: S.Sxpr -> Bool
+prop_roundTripSxpr2 e = parsed == Right (e, "")
+  where parsed = Fun.PC2.run Fun.PC2.Sxpr.sxprP s
+        s      = render e
+
+prop_roundTripSxpr2' :: Rendering S.Sxpr -> Bool
+prop_roundTripSxpr2' (Rendering x s) =
+  case Fun.PC2.run Fun.PC2.Sxpr.sxprP s of
+    Right (got, _) | got == x -> True
+    _ -> False
 
 prop_roundTripSxpr3 :: S.Sxpr -> Bool
 prop_roundTripSxpr3 e = parsed == Fun.PC3.Ok e ""
@@ -119,7 +131,11 @@ main = do
         .&&. prop_roundTripJson2'
         .&&. prop_roundTripJson3'
       prop_Sxpr = prop_roundTripSxpr
+        .&&. prop_roundTripSxpr2
+        .&&. prop_roundTripSxpr3
         .&&. prop_roundTripSxpr'
+        .&&. prop_roundTripSxpr2'
+        .&&. prop_roundTripSxpr3'
       prop_Scheme = prop_SchemeEval
         .&&. prop_SchemeEval2
 

@@ -32,6 +32,7 @@ library
       Fun.PC1.Sxpr
       Fun.PC2
       Fun.PC2.Json
+      Fun.PC2.Sxpr
       Fun.PC3
       Fun.PC3.Json
       Fun.PC3.Sxpr
