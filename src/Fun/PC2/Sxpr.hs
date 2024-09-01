@@ -37,12 +37,14 @@ listP = parensP $ asPair <$> sepByP (some wsP) sxprP
     asPair [] = Nil
 
 atomP :: Parser Sxpr
-atomP = boolP <|> intP <|> symP <|> zilchP
+atomP = boolP <|> intP <|> strP <|> symP <|> zilchP
   where
     symP = Sym <$> some symCP
     boolP = b "#t" V.T <|> b "#f" V.F
     b s f = Lit . const f <$> wordP s
     intP = Lit . (V.Num . fromIntegral) <$> integerP
+    strP = Lit . V.Str <$> qStringP
+    qStringP = surr (char '"') $ many (charP (/= '"'))
 
 sxprP :: Parser Sxpr
 sxprP = many wsP >> (qSxprP <|> atomP <|> cellP <|> listP)

@@ -31,7 +31,7 @@ instance Show Sxpr where show = render
 
 instance Render Val where
   render (Num n) = show n
-  render (Str s) = show s
+  render (Str s) = "\"" ++ s ++ "\""
   render T = "#t"
   render F = "#f"
 
@@ -69,7 +69,14 @@ instance GenShow Sxpr where
 instance Arbitrary Val where
   arbitrary = oneof [ Num <$> arbitrary
                     , return T, return F
+                    , Str <$> genString
                     ]
+    where
+      genString = do
+        l <- choose (0, 20)
+        vectorOf l genReasonableChar
+      genReasonableChar = elements $
+        ['a'..'z'] ++ ['A'..'Z'] ++ ['0'..'9'] ++ "-/$!,."
 
 instance Arbitrary Sxpr where
   arbitrary = sized arbitrary'

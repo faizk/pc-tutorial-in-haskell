@@ -40,12 +40,13 @@ listP = parensP $ asPair `pmap` delimP (oneOrMore wsP) sxprP
     asPair [] = Nil
 
 atomP :: Parser Sxpr
-atomP = boolP `orElse` intP `orElse` symP `orElse` zilchP
+atomP = boolP `orElse` intP `orElse` qStringP `orElse` symP `orElse` zilchP
   where
     symP = Sym `pmap` oneOrMore symCP
     boolP = b "#t" V.T `orElse` b "#f" V.F
     b s f = (Lit . const f) `pmap` strP s
     intP = (Lit . (V.Num . fromIntegral)) `pmap` integerP
+    qStringP = (Lit . V.Str) `pmap` surr (char '"') (zeroOrMore (charP (/= '"')))
 
 sxprP :: Parser Sxpr
 sxprP = lsp $ qSxprP `orElse` atomP `orElse` cellP `orElse` listP
