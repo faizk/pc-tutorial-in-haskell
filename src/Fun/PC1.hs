@@ -114,7 +114,7 @@ surr2 :: Parser a -> Parser b -> Parser c -> Parser b
 surr2 pa pb pc = pmap (snd . fst) $ pa `foll` pb `foll` pc
 
 digitsToNat :: [Natural] -> Natural
-digitsToNat ds = sum [d * (10^p) | (d,p) <- reverse ds `zip` [0..]]
+digitsToNat ds = sum [d * (10^p) | (d,p) <- reverse ds `zip` [(0::Int)..]]
 
 integerP :: Parser Integer
 integerP = pos `orElse` neg

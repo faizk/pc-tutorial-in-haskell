@@ -12,13 +12,12 @@ module Fun.Scheme2
     , evalBindingsRec
     ) where
 
-import Control.Applicative
-
 import qualified Fun.Sxpr as S
+import Data.Traversable (mapAccumM)
+import Data.Foldable (foldlM)
+
 import Fun.Sxpr (Sxpr((:~)), maybeList)
 import Fun.Utils
-import Data.Traversable (mapAccumM)
-import Data.Foldable (foldlM, foldrM)
 
 data Loc where
   Loc :: Int -> Loc
@@ -260,8 +259,6 @@ eval (env, mem) sxpr =
         apply fVal argVals mem''
       where
         g m = eval (env, m)
-    w ->
-      Left $ "TODO: " ++ show w
 
 builtIns :: [(String, Value)]
 builtIns = map (\(k, v) -> (k, Callable $ BuiltIn v))

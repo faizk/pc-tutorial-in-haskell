@@ -68,7 +68,7 @@ digitP = charP isDigit >>= (\c -> pure $ toInteger $ length ['1'..c])
 
 posIntegerP :: Parser Integer
 posIntegerP = fromDigits <$> some digitP
-  where fromDigits ds = sum [d * (10^p) | (d,p) <- reverse ds `zip` [0..]]
+  where fromDigits ds = sum [d * (10^p) | (d,p) <- reverse ds `zip` [(0::Int)..]]
 
 integerP :: Parser Integer
 integerP = posIntegerP <|> neg where

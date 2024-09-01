@@ -6,8 +6,6 @@ module Fun.Scheme1
     , Env
     ) where
 
-import Control.Applicative
-
 import qualified Fun.Sxpr as S
 import Fun.Sxpr (Sxpr((:~)), maybeList)
 import Fun.Utils

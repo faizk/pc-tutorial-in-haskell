@@ -13,7 +13,7 @@ import Control.Monad ((>=>))
 import Control.Exception (try, catch, SomeException)
 import Data.Char (isSpace)
 import Data.List (intercalate)
-import System.IO (hFlush, stdout, stderr, hPrint, isEOF)
+import System.IO (hFlush, stdout, stderr, hPrint)
 import qualified Data.Bifunctor
 import System.IO.Error (isEOFError)
 
