@@ -39,7 +39,9 @@ listP = parensP $ asPair <$> sepByP (some wsP) sxprP
 atomP :: Parser Sxpr
 atomP = boolP <|> intP <|> symP <|> zilchP
   where
-    symP = Sym <$> some symCP
+    symP = Sym <$> (some symCP >>= validSym)
+    validSym "." = fail "[.]: invalid symbol"
+    validSym sym = pure sym
     boolP = b "#t" V.T <|> b "#f" V.F
     b s f = Lit . const f <$> wordP s
     intP = Lit . (V.Num . fromIntegral) <$> integerP
