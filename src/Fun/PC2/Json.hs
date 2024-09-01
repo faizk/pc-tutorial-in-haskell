@@ -21,9 +21,7 @@ qStringP = surr (char '"') $ many (charP (/= '"'))
 
 boolP :: Parser J.Json
 boolP = p True "true" <|> p False "false"
-  where
-    -- p b s = (const $ J.Bool b) <$> wordP s
-    p b s = J.Bool b <$ wordP s
+  where p b s = J.Bool b <$ wordP s
 
 collP :: Parser s -> Parser a -> Parser e -> Parser [a]
 collP ps pa pe = surr2 (ws ps) lp (ws pe)
