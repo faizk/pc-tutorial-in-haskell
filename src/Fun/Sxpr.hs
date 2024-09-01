@@ -35,11 +35,11 @@ instance Render Val where
   render T = "#t"
   render F = "#f"
 
-maybeList :: Sxpr -> Maybe [Sxpr]
+maybeList :: MonadFail m => Sxpr -> m [Sxpr]
 maybeList e = case e of
   h :~ t -> (h :) <$> maybeList t
   Nil -> pure []
-  _ -> Nothing
+  _ -> fail $ "syntax error: not a list: " ++ show e
 
 instance Render Sxpr where
   render e = case e of
