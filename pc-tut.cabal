@@ -32,6 +32,9 @@ library
       Fun.PC1.Sxpr
       Fun.PC2
       Fun.PC2.Json
+      Fun.PC3
+      Fun.PC3.Json
+      Fun.PC3.Sxpr
       Fun.Scheme1
       Fun.Scheme1.Interp1
       Fun.Scheme2
