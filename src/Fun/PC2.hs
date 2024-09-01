@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 module Fun.PC2
     ( Parser(..)
     , charP, char
@@ -40,18 +41,17 @@ instance Alternative Parser where
   pa <|> pb = Parser (\s -> either (const $ run pb s) pure (run pa s))
 
 charP :: (Char -> Bool) -> Parser Char
-charP f = Parser p
-  where p (c:cs) | f c  = Right (c, cs)
-        p []            = Left "EOF"
-        p (c:_)         = Left $ "unexpected char: " ++ [c]
+charP f = anyChar >>= \case
+  c | f c -> return c
+  c      -> fail $ "unexpected char: " ++ [c]
 
 char :: Char -> Parser Char
 char c = charP (== c)
 
 anyChar :: Parser Char
-anyChar = Parser p where
-  p (c:cs) = Right (c,cs)
-  p _      = Left "EOF"
+anyChar = Parser $ \case
+  (c:cs) -> Right (c,cs)
+  _      -> Left "EOF"
 
 digitP :: Parser Integer
 digitP = charP isDigit >>= (\c -> pure $ toInteger $ length ['1'..c])

@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 module Fun.PC3
     ( Parser(..)
     , Res(..)
@@ -15,10 +16,7 @@ module Fun.PC3
 import Data.Char (isDigit)
 import Control.Applicative (Alternative(..))
 
-data Res a
-  = Bad String
-  | Ok a String
-  deriving (Eq, Show)
+data Res a = Bad String | Ok a String deriving (Eq, Show)
 
 instance Functor Res where
   fmap _ (Bad reason) = Bad reason
@@ -53,18 +51,17 @@ instance Alternative Parser where
       ok@(Ok _ _) -> ok
 
 charP :: (Char -> Bool) -> Parser Char
-charP f = Parser p
-  where p (c:cs) | f c  = Ok c cs
-        p []            = Bad "EOF"
-        p (c:_)         = Bad $ "unexpected char: " ++ [c]
+charP f = anyChar >>= \case
+  c | f c  -> return c
+  c        -> fail $ "unexpected char: " ++ [c]
 
 char :: Char -> Parser Char
 char c = charP (== c)
 
 anyChar :: Parser Char
-anyChar = Parser p where
-  p (c:cs) = Ok c cs
-  p _      = Bad "EOF"
+anyChar = Parser $ \case
+  (c:cs) -> Ok c cs
+  _      -> Bad "EOF"
 
 digitP :: Parser Integer
 digitP = charP isDigit >>= (\c -> pure $ toInteger $ length ['1'..c])
@@ -88,8 +85,7 @@ ws = surr (many wsP)
 
 wsP :: Parser Char
 wsP = foldr (<|>) (fail "not ws") wsPs
-    where
-      wsPs = map char " \n\t"
+    where wsPs = map char " \n\t"
 
 surr :: Parser a -> Parser b -> Parser b
 surr pa pb = surr2 pa pb pa
