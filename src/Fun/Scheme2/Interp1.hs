@@ -18,7 +18,7 @@ import qualified Data.Bifunctor
 import System.IO.Error (isEOFError)
 
 
-interp :: MonadFail m => (Env, Mem) -> Sxpr -> m (Mem, Either Env Value)
+interp :: (Env, Mem) -> Sxpr -> IO (Mem, Either Env Value)
 interp (env, mem) sxpr =
   case sxpr of
     Sym "define" :~ (Sym name) :~ valSxpr :~ Nil ->
