@@ -181,6 +181,18 @@ instance Arbitrary ST3 where
                   (args `(3 ,x)))
               (apply f args)))
           |] "66"
+      , test "(eval 1)" "1"
+      , test [r|(eval '(+ 1 3 13))|] "17"
+      , test [r|
+          (let ((f +)
+                (args '(3 19)))
+            (eval (cons f args)))
+          |] "22"
+      , test [r|
+          (let ((env
+                  '((a 7))))
+              (eval '(* a a) env))
+          |] "49"
       ]
     where
       toST3 (ST2 (inp, out)) = ST3 (inp, out)

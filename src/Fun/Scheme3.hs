@@ -243,6 +243,14 @@ eval (env, mem) = \case
       asBool (Lit S.T) = pure True
       asBool (Lit S.F) = pure False
       asBool bad = fail $ "type error: not a boolean: " ++ show bad
+  Sym "eval" :~ expr :~ Nil ->
+    eval (env, mem) $ Sym "eval" :~ expr :~ Nil :~ Nil
+  Sym "eval" :~ expr :~ ns :~ Nil ->
+    do (mem', exprVal) <- eval (env, mem) expr
+       (mem'', nsBindingsExpr) <- eval (env, mem') ns
+       (mem''', nsBindingsVal) <- rawBindings nsBindingsExpr >>= evalBindings env mem''
+       let (env', _) = initEnv
+       eval (updateEnv nsBindingsVal env', mem''') exprVal
   Sym "apply" :~ fxpr :~ argsXpr :~ Nil ->
     do (mem', argsVal) <- eval (env, mem) argsXpr
        argsValList <- asList argsVal
