@@ -117,23 +117,19 @@ prop_SchemeEval2 st = case st of
 prop_SchemeEval3 :: ST3 -> IO Bool
 prop_SchemeEval3 st = case st of
   ST3 (inp, Right out) ->
-    -- (parse inp >>= eval) == (Fun.Scheme3.fromSxpr <$> parse out)
     do
       got <- parse inp >>= eval
-      expected <- Fun.Scheme3.fromSxpr <$> parse out
+      expected <- parse out
       return $ got == expected
   ST3 (inp, Left errMatches) ->
     do
       Left (SomeException msg) <- try (parse inp >>= eval)
-      -- expected <- Fun.Scheme3.fromSxpr <$> parse out
       return $ matches $ show msg
-
     where
       matches err = all (`isSubsequenceOf` err) errMatches
-      -- parse inp >>= eval
   where
     eval s = snd <$> Fun.Scheme3.eval Fun.Scheme3.initEnv s
-    parse s = either fail return $ parse' s
+    parse s = either fail (return . Fun.Scheme3.fromSxpr) $ parse' s
     parse' s = fst <$> Fun.PC2.run Fun.PC2.Sxpr.sxprP s
 
 
