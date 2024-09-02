@@ -18,15 +18,18 @@ import qualified Fun.PC3.Sxpr
 import Fun.Utils (Render(..), Rendering(..), orL)
 import qualified Fun.Scheme1
 import qualified Fun.Scheme2
-import Data.Either (isRight, partitionEithers)
+import qualified Fun.Scheme3
 
-import Text.RawString.QQ
+import Data.Either (isRight, partitionEithers)
 import Data.List (isSubsequenceOf)
+import Text.RawString.QQ
+import Control.Exception (try, SomeException (SomeException))
 
 newtype ST = ST (String, Maybe String) deriving Show
 
 type ErrMatches = [String]
 newtype ST2 = ST2 (String, Either ErrMatches String) deriving Show
+newtype ST3 = ST3 (String, Either ErrMatches String) deriving Show
 
 prop_roundTripJson :: J.Json -> Bool
 prop_roundTripJson j = parsed == [(j, "")]
@@ -111,6 +114,29 @@ prop_SchemeEval2 st = case st of
     eval s = snd <$> Fun.Scheme2.eval Fun.Scheme2.initEnv s
     parse s = fst <$> Fun.PC1.Sxpr.sxprP s
 
+prop_SchemeEval3 :: ST3 -> IO Bool
+prop_SchemeEval3 st = case st of
+  ST3 (inp, Right out) ->
+    -- (parse inp >>= eval) == (Fun.Scheme3.fromSxpr <$> parse out)
+    do
+      got <- parse inp >>= eval
+      expected <- Fun.Scheme3.fromSxpr <$> parse out
+      return $ got == expected
+  ST3 (inp, Left errMatches) ->
+    do
+      Left (SomeException msg) <- try (parse inp >>= eval)
+      -- expected <- Fun.Scheme3.fromSxpr <$> parse out
+      return $ matches $ show msg
+
+    where
+      matches err = all (`isSubsequenceOf` err) errMatches
+      -- parse inp >>= eval
+  where
+    eval s = snd <$> Fun.Scheme3.eval Fun.Scheme3.initEnv s
+    parse s = either fail return $ parse' s
+    parse' s = fst <$> Fun.PC2.run Fun.PC2.Sxpr.sxprP s
+
+
 main :: IO ()
 main = do
   verboseCheckWith args (prop_roundTrips .&&. prop_Scheme)
@@ -138,6 +164,31 @@ main = do
         .&&. prop_roundTripSxpr3'
       prop_Scheme = prop_SchemeEval
         .&&. prop_SchemeEval2
+        .&&. (ioProperty . prop_SchemeEval3)
+
+instance Arbitrary ST3 where
+  arbitrary =
+    oneof
+      [ toST3 <$> (arbitrary :: Gen ST2)
+      , test [r|(apply + '(2 3 5))|] "10"
+      , test [r|
+          (let ((args '(3 4 5)))
+              (apply + args))
+          |] "12"
+      , test [r|
+          (let ((args (cons 3 (cons 4 (cons 5 '())))))
+              (apply + args))
+          |] "12"
+      , test [r|
+          (let ((x 22))
+            (let ((f *)
+                  (args `(3 ,x)))
+              (apply f args)))
+          |] "66"
+      ]
+    where
+      toST3 (ST2 (inp, out)) = ST3 (inp, out)
+      test inp out = return $ ST3 (inp, pure out)
 
 instance Arbitrary ST2 where
   arbitrary =

@@ -40,6 +40,7 @@ library
       Fun.Scheme1.Interp1
       Fun.Scheme2
       Fun.Scheme2.Interp1
+      Fun.Scheme3
       Fun.Sxpr
       Fun.Utils
   other-modules:
