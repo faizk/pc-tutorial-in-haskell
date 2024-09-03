@@ -25,6 +25,10 @@ import Data.List (isSubsequenceOf)
 import Text.RawString.QQ
 import Control.Exception (try, SomeException (SomeException))
 
+import Test.Hspec
+
+import qualified Scheme33Interp1
+
 newtype ST = ST (String, Maybe String) deriving Show
 
 type ErrMatches = [String]
@@ -135,6 +139,11 @@ prop_SchemeEval3 st = case st of
 
 main :: IO ()
 main = do
+  allChecks
+  hspec Scheme33Interp1.interpSpec
+
+allChecks :: IO ()
+allChecks = do
   verboseCheckWith args (prop_roundTrips .&&. prop_Scheme)
     where
       args = Args {
