@@ -12,9 +12,10 @@ import qualified Fun.Scheme3 as Scheme3 (initEnv)
 import qualified Fun.PC1.Sxpr as PC1 (sxprP)
 import qualified Fun.PC3.Sxpr as PC3 (sxprP)
 
-import qualified Fun.PC3 as PC3 (run, Res(..))
+import qualified Fun.PC3 as PC3 (run, Res(..), wsP, sepByP)
 
 import Data.Maybe (listToMaybe)
+import Control.Applicative
 
 import System.IO (stderr, hPutStrLn)
 
@@ -28,7 +29,7 @@ toIO (PC3.Bad reason) = fail $ "parse error:" ++ reason
 
 scheme31Repl :: IO ()
 scheme31Repl = Scheme3.repl readP Scheme3.initEnv
-  where readP = toIO . PC3.run PC3.sxprP
+  where readP = toIO . PC3.run (PC3.sepByP PC3.wsP PC3.sxprP)
 
 scheme23Repl :: IO ()
 scheme23Repl = Scheme2.repl readP Scheme2.initEnv

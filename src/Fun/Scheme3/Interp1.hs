@@ -1,4 +1,4 @@
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Fun.Scheme3.Interp1
     ( repl
@@ -9,16 +9,15 @@ import Fun.Sxpr as S (Sxpr(..))
 import Fun.Utils
 
 import Control.Applicative
-import Control.Monad ((>=>))
+import Control.Monad (foldM, when)
 import Control.Exception (try, catch, SomeException)
 import Data.Char (isSpace)
 import Data.List (intercalate)
-import System.IO (hFlush, stdout, stderr, hPrint)
-import qualified Data.Bifunctor
+import System.IO (hFlush, stdout, stderr, hPrint, stdin, hIsTerminalDevice, hPutStrLn)
 import System.IO.Error (isEOFError)
 
 
-interp :: (Env, Mem) -> Sxpr -> IO (Mem, Either Env Value)
+interp :: (Env, Mem) -> Sxpr -> IO ((Env, Mem), Maybe Value)
 interp (env, mem) sxpr =
   case sxpr of
     Sym "define" :~ (Sym name) :~ valSxpr :~ Nil ->
@@ -27,35 +26,43 @@ interp (env, mem) sxpr =
             newEnv = (name, newLoc) : env
         (_, v) <- S3.eval (newEnv, mem) (fromSxpr valSxpr)
         let newMem = (newLoc, v) : mem
-        return (newMem, Left newEnv)
+        return ((newEnv, newMem), Nothing)
     Sym "define" :~ (Sym fName :~ fArgsXpr) :~ fBodyExpr ->
       interp (env, mem) defn
         where
           defn = Sym "define" :~ Sym fName :~ lam :~ Nil
           lam = Sym "lambda" :~ fArgsXpr :~ fBodyExpr
     _ ->
-      Data.Bifunctor.second Right <$> S3.eval (env, mem) (fromSxpr sxpr)
+      do
+        (mem', v) <- S3.eval (env, mem) (fromSxpr sxpr)
+        return ((env, mem'), Just v)
 
-type Parser a = a -> IO Sxpr
+type Parser a = a -> IO [Sxpr]
 
 repl :: Parser String -> (Env, Mem) -> IO ()
 repl read' (env, mem) =
   do
-    maybeSxpr <- (Just <$> readSxpr (read' . intercalate "\n")) `catch` eof
-    maybe (print "BYE") (interp' >=> either err ok) maybeSxpr
+    maybeSxprs <- (Just <$> readSxpr (read' . intercalate "\n")) `catch` eof
+    maybe bye interpList maybeSxprs
   where
+    interpList :: [Sxpr] -> IO ()
+    interpList xs = try (foldM g ((env, mem), Nothing) xs)
+                    >>= either err (repl read' . fst)
+    g :: ((Env, Mem), Maybe Value) -> Sxpr -> IO ((Env, Mem), Maybe Value)
+    g (em, _) sxpr = interp em sxpr >>= \case
+      x@(_, Just v)  -> putStrLn (render v) >> return x
+      x@(_, Nothing) -> return x
+
+    bye = interactive $ hPutStrLn stderr "BYE!"
     eof e = if isEOFError e then return Nothing else ioError e
     err :: SomeException -> IO ()
     err e = hPrint stderr e >> repl read' (env, mem)
-    ok (mem', r) = either (repl read' . (, mem')) result r
-    result v = putStrLn (render v) >> repl read' (env, mem)
-    interp' = try . interp (env, mem)
 
-readSxpr :: Parser [String] -> IO Sxpr
+readSxpr :: Parser [String] -> IO [Sxpr]
 readSxpr read' =
   prompt "> " >> loop []
   where
-    prompt s = putStr s >> hFlush stdout
+    prompt s = interactive (putStr s >> hFlush stdout)
     more = prompt "  "
     loop inp =
       do
@@ -63,3 +70,6 @@ readSxpr read' =
         read' inp' <|> (more >> loop inp')
     getLine' = getLine >>= \l ->
       if all isSpace l then more >> getLine' else return l
+
+interactive :: IO () -> IO ()
+interactive io = hIsTerminalDevice stdin >>= (`when` io)
