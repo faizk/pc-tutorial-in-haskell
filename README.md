@@ -58,4 +58,6 @@ rlwrap -m -M.scm stack run
       input spanning multiple-lines; it is the REPL that is (at the moment)
       limited to one-line S-expressions)
 * [ ] Just for fun, try implementing garbage collection
-
+- [ ] Implement `load`
+- [ ] add more built-ins
+- [ ] Macros?
