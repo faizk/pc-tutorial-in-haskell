@@ -53,9 +53,9 @@ rlwrap -m -M.scm stack run
 ```
 
 ## TODO
-- [ ] multi-line input in the REPL
--     (note that the parser itself is OK with
--     input spanning multiple-lines; the REPL is at the moment
--     limited to one-line S-expressions)
-- [ ] Just for fun, try implementing garbage collection
--
+* [ ] multi-line input in the REPL
+    - (note that the parser itself is OK with
+      input spanning multiple-lines; it is the REPL that is (at the moment)
+      limited to one-line S-expressions)
+* [ ] Just for fun, try implementing garbage collection
+
